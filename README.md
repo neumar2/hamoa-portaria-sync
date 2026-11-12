@@ -152,6 +152,14 @@ hamoa-portaria-sync/
 
 ---
 
+## 👤 Autor
+
+**Neumar Porto Permonian**  
+- **Email:** [permonian@gmail.com](mailto:permonian@gmail.com)  
+- **GitHub:** [@neumar2](https://github.com/neumar2)
+
+---
+
 ## 📄 Licença
 
 Distribuído sob a licença **MIT**. Consulte o arquivo [LICENSE](LICENSE) para obter mais informações.
