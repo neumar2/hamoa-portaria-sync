@@ -150,40 +150,46 @@ function gerarAlertasConsolidados(prestadores, unidades, refDate = new Date()) {
   }
 
   prestadores.forEach(p => {
-    const qdLote = p.quadraLote || 'Geral';
-    let uni = unidadesMap.get(qdLote);
-    if (!uni) {
-      uni = {
-        id: 'uni_' + qdLote.replace(/[^a-zA-Z0-9]/g, '_'),
-        chavePrimaria: qdLote,
-        quadra: '',
-        lote: '',
-        condominos: p.condominoResponsavel ? [{ nome: p.condominoResponsavel }] : [],
-        prestadores: [],
-        hasVencidos: false,
-        hasHoje: false,
-        hasAmanha: false,
-        has7dias: false,
-        has15dias: false,
-        totalPrestadores: 0
-      };
-      unidadesMap.set(qdLote, uni);
-    }
+    const unidadesParaAlertar = (Array.isArray(p.unidadesAtendidas) && p.unidadesAtendidas.length > 0)
+      ? p.unidadesAtendidas.map(u => u.quadraLote).filter(Boolean)
+      : [p.quadraLote || 'Geral'];
 
+    const unidadesUnicas = Array.from(new Set(unidadesParaAlertar));
     const classificacao = classificarVencimento(p.vencimentoFacial, ref);
     const prestadorComStatus = {
       ...p,
       analiseVencimento: classificacao
     };
 
-    uni.prestadores.push(prestadorComStatus);
-    uni.totalPrestadores++;
+    unidadesUnicas.forEach(qdLote => {
+      let uni = unidadesMap.get(qdLote);
+      if (!uni) {
+        uni = {
+          id: 'uni_' + qdLote.replace(/[^a-zA-Z0-9]/g, '_'),
+          chavePrimaria: qdLote,
+          quadra: '',
+          lote: '',
+          condominos: p.condominoResponsavel ? [{ nome: p.condominoResponsavel }] : [],
+          prestadores: [],
+          hasVencidos: false,
+          hasHoje: false,
+          hasAmanha: false,
+          has7dias: false,
+          has15dias: false,
+          totalPrestadores: 0
+        };
+        unidadesMap.set(qdLote, uni);
+      }
 
-    if (classificacao.status === 'VENCIDO') uni.hasVencidos = true;
-    if (classificacao.status === 'HOJE') uni.hasHoje = true;
-    if (classificacao.status === 'AMANHA') uni.hasAmanha = true;
-    if (['HOJE', 'AMANHA', '7DIAS'].includes(classificacao.status)) uni.has7dias = true;
-    if (classificacao.status === '15DIAS') uni.has15dias = true;
+      uni.prestadores.push(prestadorComStatus);
+      uni.totalPrestadores++;
+
+      if (classificacao.status === 'VENCIDO') uni.hasVencidos = true;
+      if (classificacao.status === 'HOJE') uni.hasHoje = true;
+      if (classificacao.status === 'AMANHA') uni.hasAmanha = true;
+      if (['HOJE', 'AMANHA', '7DIAS'].includes(classificacao.status)) uni.has7dias = true;
+      if (classificacao.status === '15DIAS') uni.has15dias = true;
+    });
   });
 
   const resultado = Array.from(unidadesMap.values())

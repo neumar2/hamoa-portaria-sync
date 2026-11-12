@@ -420,6 +420,50 @@ async function executarSincronizacao(opcoes = {}) {
     const observacaoPreservada = (existing && existing.observacoes && existing.observacoes !== '-') ? 
                                  existing.observacoes : (sheetMatch ? sheetMatch.observacoes : '');
 
+    let unidadesAtendidas = (sheetMatch && Array.isArray(sheetMatch.unidadesAtendidas) && sheetMatch.unidadesAtendidas.length > 0)
+      ? sheetMatch.unidadesAtendidas
+      : (existing && Array.isArray(existing.unidadesAtendidas) && existing.unidadesAtendidas.length > 0 ? existing.unidadesAtendidas : []);
+
+    if (unidadesAtendidas.length === 0 && setorOuLote.startsWith('QD ')) {
+      unidadesAtendidas = [{
+        quadraLote: setorOuLote,
+        quadraLoteOriginal: setorOuLote,
+        condomino: condominoRespFormatado,
+        diasSemana: diasSemanaFinal,
+        vencimentoFacial: vencimentoFacial,
+        observacoes: observacaoPreservada
+      }];
+    }
+
+    // Garante que todas as unidades atendidas existam no cadastro e seus condôminos estejam vinculados
+    unidadesAtendidas.forEach(u => {
+      if (u.quadraLote && u.quadraLote.startsWith('QD ')) {
+        if (!unidadeMap.has(u.quadraLote)) {
+          const partsQL = u.quadraLote.split('-');
+          const qNum = partsQL[0] ? partsQL[0].replace(/\D/g, '').padStart(2, '0') : '00';
+          const lNum = partsQL[1] ? partsQL[1].replace(/\D/g, '').padStart(2, '0') : '00';
+          const novaUni = {
+            id: `uni_${qNum}_${lNum}`,
+            quadra: qNum,
+            lote: lNum,
+            chavePrimaria: u.quadraLote,
+            condominos: u.condomino ? [{ nome: extrairTitularesDeduplicados(u.condomino, 2) }] : [],
+            observacoes: '',
+            criadoEm: new Date().toISOString()
+          };
+          dbData.unidades.push(novaUni);
+          unidadeMap.set(u.quadraLote, novaUni);
+        } else if (u.condomino) {
+          const uni = unidadeMap.get(u.quadraLote);
+          const condFormatado = extrairTitularesDeduplicados(u.condomino, 2);
+          if (condFormatado && (!uni.condominos || !uni.condominos.some(c => normalizarNome(c.nome) === normalizarNome(condFormatado)))) {
+            if (!uni.condominos) uni.condominos = [];
+            uni.condominos.push({ nome: condFormatado });
+          }
+        }
+      }
+    });
+
     const prestadorObj = {
       id: uniqueId,
       nome: nomeCompleto,
@@ -430,6 +474,8 @@ async function executarSincronizacao(opcoes = {}) {
       funcaoCargo: cargoFinal,
       quadraLote: setorOuLote,
       condominoResponsavel: condominoRespFormatado,
+      unidadesAtendidas: unidadesAtendidas,
+      totalCasas: unidadesAtendidas.length || 1,
       telefoneResponsavel: (existing && existing.telefoneResponsavel) ? existing.telefoneResponsavel : (telefone || ''),
       vencimentoFacial: vencimentoFacial,
       diasSemana: diasSemanaFinal,
@@ -473,6 +519,50 @@ async function executarSincronizacao(opcoes = {}) {
       const respFormatado = extrairTitularesDeduplicados(respFinal, 2) || 'Condômino da Unidade';
       const diasFinal = isManual ? existing.diasSemana : (s.diasSemana || 'DIÁRIO');
 
+      let unidadesAtendidas = (s.unidadesAtendidas && Array.isArray(s.unidadesAtendidas) && s.unidadesAtendidas.length > 0)
+        ? s.unidadesAtendidas
+        : (existing && Array.isArray(existing.unidadesAtendidas) && existing.unidadesAtendidas.length > 0 ? existing.unidadesAtendidas : []);
+
+      if (unidadesAtendidas.length === 0 && qdFinal.startsWith('QD ')) {
+        unidadesAtendidas = [{
+          quadraLote: qdFinal,
+          quadraLoteOriginal: qdFinal,
+          condomino: respFormatado,
+          diasSemana: diasFinal,
+          vencimentoFacial: venc,
+          observacoes: observacaoPreservada
+        }];
+      }
+
+      // Garante que todas as unidades atendidas existam no cadastro e seus condôminos estejam vinculados
+      unidadesAtendidas.forEach(u => {
+        if (u.quadraLote && u.quadraLote.startsWith('QD ')) {
+          if (!unidadeMap.has(u.quadraLote)) {
+            const partsQL = u.quadraLote.split('-');
+            const qNum = partsQL[0] ? partsQL[0].replace(/\D/g, '').padStart(2, '0') : '00';
+            const lNum = partsQL[1] ? partsQL[1].replace(/\D/g, '').padStart(2, '0') : '00';
+            const novaUni = {
+              id: `uni_${qNum}_${lNum}`,
+              quadra: qNum,
+              lote: lNum,
+              chavePrimaria: u.quadraLote,
+              condominos: u.condomino ? [{ nome: extrairTitularesDeduplicados(u.condomino, 2) }] : [],
+              observacoes: '',
+              criadoEm: new Date().toISOString()
+            };
+            dbData.unidades.push(novaUni);
+            unidadeMap.set(u.quadraLote, novaUni);
+          } else if (u.condomino) {
+            const uni = unidadeMap.get(u.quadraLote);
+            const condFormatado = extrairTitularesDeduplicados(u.condomino, 2);
+            if (condFormatado && (!uni.condominos || !uni.condominos.some(c => normalizarNome(c.nome) === normalizarNome(condFormatado)))) {
+              if (!uni.condominos) uni.condominos = [];
+              uni.condominos.push({ nome: condFormatado });
+            }
+          }
+        }
+      });
+
       novosPrestadores.push({
         id: existing ? existing.id : `pres_sheet_${String(idx + 1).padStart(4, '0')}`,
         nome: s.nome,
@@ -483,6 +573,8 @@ async function executarSincronizacao(opcoes = {}) {
         funcaoCargo: cargoFinal,
         quadraLote: qdFinal,
         condominoResponsavel: respFormatado,
+        unidadesAtendidas: unidadesAtendidas,
+        totalCasas: unidadesAtendidas.length || 1,
         telefoneResponsavel: existing ? existing.telefoneResponsavel : '',
         vencimentoFacial: venc,
         diasSemana: diasFinal,

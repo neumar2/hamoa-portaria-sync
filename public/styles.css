@@ -2057,3 +2057,305 @@ body {
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
+
+/* ==============================================================================
+   ESTILOS DE SUPORTE A PRESTADORES MULTI-CASAS (Jardineiro, Piscineiro, etc.)
+   ============================================================================== */
+
+.lote-cell-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.badge-multi-casas {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+  padding: 2px 7px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  line-height: 1.2;
+}
+
+.badge-multi-casas:hover {
+  background: #dbeafe;
+  border-color: #93c5fd;
+  color: #1e40af;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.15);
+}
+
+.sub-multi-moradores {
+  font-size: 11px;
+  color: #2563eb;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline dotted;
+  margin-top: 3px;
+  display: inline-block;
+  transition: color 0.15s;
+}
+
+.sub-multi-moradores:hover {
+  color: #1d4ed8;
+  text-decoration: underline solid;
+}
+
+.badge-multi-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-left: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.badge-multi-tag:hover {
+  background: #dcfce7;
+  border-color: #86efac;
+}
+
+/* Modal de Residências Atendidas */
+.modal-multi-casas-box {
+  max-width: 680px;
+  width: 92%;
+}
+
+.multi-casas-banner {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 14px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.multi-casas-banner .info-main strong {
+  font-size: 16px;
+  color: #0f172a;
+  display: block;
+}
+
+.multi-casas-banner .info-main span {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.multi-casas-banner .facial-info {
+  text-align: right;
+}
+
+.multi-casas-banner .facial-info .venc-label {
+  font-size: 11px;
+  color: #64748b;
+  text-transform: uppercase;
+  font-weight: 700;
+  display: block;
+}
+
+.multi-casas-banner .facial-info .venc-data {
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.multi-casas-instrucao {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e40af;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  margin: 14px 0;
+}
+
+.multi-casas-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 360px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.multi-casa-item {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.2s ease;
+}
+
+.multi-casa-item:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.multi-casa-item .casa-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.multi-casa-item .badge-lote-card {
+  background: #0284c7;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 6px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.multi-casa-item .casa-dados {
+  min-width: 0;
+}
+
+.multi-casa-item .casa-dados .morador-nome {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #1e293b;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.multi-casa-item .casa-dados .casa-detalhe {
+  font-size: 11.5px;
+  color: #64748b;
+  display: flex;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.multi-casa-item .casa-acoes {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.btn-mini-ver {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s;
+}
+
+.btn-mini-ver:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.btn-mini-whats {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s;
+}
+
+.btn-mini-whats:hover {
+  background: #d1fae5;
+  border-color: #6ee7b7;
+  color: #047857;
+}
+
+/* Seletor de Condôminos no Modal do WhatsApp */
+.multi-destinatarios-selector {
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+
+.label-multi-dest {
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.chips-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.chip-dest {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  padding: 5px 10px;
+  border-radius: 16px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.chip-dest:hover {
+  border-color: #94a3b8;
+  background: #f1f5f9;
+}
+
+.chip-dest.active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.25);
+}

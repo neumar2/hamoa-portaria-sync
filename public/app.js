@@ -136,6 +136,19 @@ async function carregarDadosIniciais() {
     allPrestadores = await resPrest.json();
     appSettings = await resSet.json();
 
+    // Vincula colaboradores multi-casas na contagem de cada unidade
+    allUnidades.forEach(u => {
+      const colabs = allPrestadores.filter(p => {
+        if (p.quadraLote && p.quadraLote.toLowerCase() === u.chavePrimaria.toLowerCase()) return true;
+        if (Array.isArray(p.unidadesAtendidas)) {
+          return p.unidadesAtendidas.some(ua => ua.quadraLote && ua.quadraLote.toLowerCase() === u.chavePrimaria.toLowerCase());
+        }
+        return false;
+      });
+      u.prestadores = colabs;
+      u.totalPrestadores = colabs.length;
+    });
+
     // 1. Atualizar Contadores do Radar
     document.getElementById('valHoje').textContent = stats.hoje || 0;
     document.getElementById('valAmanha').textContent = stats.amanha || 0;
@@ -417,6 +430,16 @@ function renderizarAgendaDoDia(dataStr) {
     const moradorDisplay = formatarMoradorCompacto(p.condominoResponsavel);
     const analise = p.analiseVencimento || { label: dataStr, status: 'VALIDO' };
 
+    const qtdCasas = (Array.isArray(p.unidadesAtendidas) && p.unidadesAtendidas.length > 0) ? p.unidadesAtendidas.length : (p.totalCasas || 1);
+    const multiCasasBadge = qtdCasas > 1
+      ? `<button class="badge-multi-casas" onclick="abrirModalMultiCasas('${p.id}')" title="Este colaborador atende ${qtdCasas} casas no condomínio. Clique para ver todas.">
+          <i class="ph-bold ph-buildings"></i> ${qtdCasas} casas
+        </button>`
+      : '';
+    const multiMoradoresSub = qtdCasas > 1
+      ? `<br><span class="sub-multi-moradores" onclick="abrirModalMultiCasas('${p.id}')" title="Clique para ver todos os ${qtdCasas} condôminos">+${qtdCasas - 1} condôminos</span>`
+      : '';
+
     let statusTag = `<span class="tag-status regular">✅ Regular (${analise.label})</span>`;
     if (diffDays < 0) statusTag = `<span class="tag-status vencido">🚨 Vencido</span>`;
     else if (diffDays === 0) statusTag = `<span class="tag-status hoje">⚡ HOJE</span>`;
@@ -431,8 +454,13 @@ function renderizarAgendaDoDia(dataStr) {
           ${p.observacoes && p.observacoes !== '-' ? `<br><small style="color: var(--text-muted); font-size: 11px;">Obs: ${p.observacoes}</small>` : ''}
         </td>
         <td><span style="font-weight: 600;">${p.categoria}</span></td>
-        <td><strong style="color: var(--primary-blue); font-size: 13.5px;">${qdLote}</strong></td>
-        <td><strong>${moradorDisplay}</strong></td>
+        <td>
+          <div class="lote-cell-wrapper">
+            <strong style="color: var(--primary-blue); font-size: 13.5px;">${qdLote}</strong>
+            ${multiCasasBadge}
+          </div>
+        </td>
+        <td><strong>${moradorDisplay}</strong>${multiMoradoresSub}</td>
         <td><strong style="color: #0f172a;">${p.vencimentoFacial}</strong></td>
         <td>${statusTag}</td>
         <td style="text-align: right;">
@@ -440,7 +468,7 @@ function renderizarAgendaDoDia(dataStr) {
             <button class="btn-action-ver" onclick="abrirResidencia('${qdLote}')" title="Ver ficha da residência completa">
               <i class="ph-bold ph-house-line"></i> Ver Casa
             </button>
-            <button class="btn-action-whats" onclick="abrirWhatsAppModalParaMorador('${qdLote}', '${moradorTitular}', '${p.nome}', '${p.categoria}', '${p.vencimentoFacial}')" title="Enviar WhatsApp para o morador">
+            <button class="btn-action-whats" onclick="abrirWhatsAppModalParaPrestador('${p.id}', '${qdLote}')" title="Enviar WhatsApp para o morador">
               <i class="ph-bold ph-whatsapp-logo" style="color: #16a34a;"></i> WhatsApp
             </button>
             <button class="btn-table-action" onclick="abrirModalEditarPrestador('${p.id}')" title="Editar Colaborador / Vínculo">
@@ -554,9 +582,15 @@ function selecionarResidenciaPorChave(chave, atualizarSelects = true) {
   document.getElementById('resumoMoradorNome').textContent = moradorNome;
   moradorWhatsAtual = moradorNome;
 
-  // Tabela de colaboradores desta casa
+  // Tabela de colaboradores desta casa (inclui prestadores que atendem múltiplas unidades)
   const tbody = document.getElementById('tbodyColaboradoresCasa');
-  const prestadores = unidade.prestadores || [];
+  const prestadores = allPrestadores.filter(p => {
+    if (p.quadraLote && p.quadraLote.toLowerCase() === chave.toLowerCase()) return true;
+    if (Array.isArray(p.unidadesAtendidas)) {
+      return p.unidadesAtendidas.some(u => u.quadraLote && u.quadraLote.toLowerCase() === chave.toLowerCase());
+    }
+    return false;
+  });
   document.getElementById('resumoTotalColabs').textContent = `${prestadores.length} funcionário(s)`;
 
   if (prestadores.length === 0) {
@@ -597,13 +631,20 @@ function selecionarResidenciaPorChave(chave, atualizarSelects = true) {
         tagLabel = `📱 Libera pelo App`;
       }
 
+      const qtdCasas = (Array.isArray(p.unidadesAtendidas) && p.unidadesAtendidas.length > 0) ? p.unidadesAtendidas.length : (p.totalCasas || 1);
+      const multiTag = qtdCasas > 1
+        ? `<button class="badge-multi-tag" onclick="abrirModalMultiCasas('${p.id}')" title="Este colaborador também atende outras ${qtdCasas - 1} casas no condomínio. Clique para ver todas.">
+            <i class="ph-bold ph-buildings"></i> ${qtdCasas} casas
+          </button>`
+        : '';
+
       return `
         <tr>
           <td>
             <strong style="color: var(--text-dark); font-size: 13.5px;">${p.nome}</strong>
             ${p.observacoes && p.observacoes !== '-' ? `<br><small style="color: var(--text-muted); font-size: 11px;">Obs: ${p.observacoes}</small>` : ''}
           </td>
-          <td><span style="font-weight: 600; color: var(--text-body);">${p.categoria}</span></td>
+          <td><span style="font-weight: 600; color: var(--text-body);">${p.categoria}</span>${multiTag}</td>
           <td>${p.diasSemana || 'Segunda a Sábado'}</td>
           <td><strong style="color: #0f172a; font-size: 13px;">${p.vencimentoFacial || 'Sem data cadastrada'}</strong></td>
           <td><span class="tag-status ${tagClass}">${tagLabel}</span></td>
@@ -866,6 +907,8 @@ function montarMensagemWhatsApp(unidade, moradorNome, prestadores) {
   moradorWhatsAtual = `${moradorNome} (${unidade.chavePrimaria})`;
 }
 
+let prestadorWhatsAtual = null;
+
 function abrirWhatsAppModal() {
   document.getElementById('modalWhatsMoradorDestino').textContent = moradorWhatsAtual;
   document.getElementById('modalWhatsText').textContent = textoWhatsAtual;
@@ -873,25 +916,189 @@ function abrirWhatsAppModal() {
   document.getElementById('modalWhatsApp').classList.add('open');
 }
 
-function abrirWhatsAppModalParaMorador(qdLote, moradorNome, funcNome, funcCargo, funcVenc) {
-  let template = (appSettings && appSettings.whatsappTemplate) ? appSettings.whatsappTemplate : TEMPLATE_PADRAO_WHATSAPP;
+function abrirWhatsAppModalParaPrestador(prestadorId, qdPreSelecionada) {
+  const p = allPrestadores.find(item => item.id === prestadorId);
+  if (!p) return;
 
+  prestadorWhatsAtual = p;
+  const casas = (Array.isArray(p.unidadesAtendidas) && p.unidadesAtendidas.length > 0)
+    ? p.unidadesAtendidas
+    : [{ quadraLote: p.quadraLote || 'Geral', condomino: p.condominoResponsavel }];
+
+  const boxMulti = document.getElementById('boxWhatsMultiDestinatarios');
+  const chipsContainer = document.getElementById('chipsMultiDestinatarios');
+  const lblInstruction = document.getElementById('lblModalWhatsInstruction');
+
+  if (casas.length > 1) {
+    if (boxMulti) boxMulti.style.display = 'block';
+    if (lblInstruction) lblInstruction.textContent = 'Mensagem individual formatada para o condômino selecionado:';
+
+    const casaAtiva = (qdPreSelecionada && casas.some(c => c.quadraLote === qdPreSelecionada))
+      ? qdPreSelecionada
+      : casas[0].quadraLote;
+
+    if (chipsContainer) {
+      chipsContainer.innerHTML = casas.map(c => {
+        const isSel = c.quadraLote === casaAtiva;
+        const moradorCurto = extrairTitularesString(c.condomino, 1) || 'Condômino';
+        return `
+          <button type="button" class="chip-dest ${isSel ? 'active' : ''}" onclick="selecionarDestinatarioWhats('${c.quadraLote.replace(/'/g, "\\'")}')">
+            <i class="ph-bold ph-house"></i>
+            <strong>${c.quadraLote}</strong> • ${moradorCurto}
+          </button>
+        `;
+      }).join('');
+    }
+
+    const itemAtivo = casas.find(c => c.quadraLote === casaAtiva) || casas[0];
+    montarTextoWhatsIndividual(itemAtivo.quadraLote, itemAtivo.condomino, p.nome, p.categoria, p.vencimentoFacial);
+  } else {
+    if (boxMulti) boxMulti.style.display = 'none';
+    if (lblInstruction) lblInstruction.textContent = 'A mensagem foi consolidada automaticamente com todos os funcionários e datas de vencimento:';
+    const c = casas[0];
+    montarTextoWhatsIndividual(c.quadraLote, c.condomino, p.nome, p.categoria, p.vencimentoFacial);
+  }
+
+  abrirWhatsAppModal();
+}
+
+function selecionarDestinatarioWhats(qdLote) {
+  if (!prestadorWhatsAtual) return;
+  const p = prestadorWhatsAtual;
+  const casas = (Array.isArray(p.unidadesAtendidas) && p.unidadesAtendidas.length > 0)
+    ? p.unidadesAtendidas
+    : [{ quadraLote: p.quadraLote || 'Geral', condomino: p.condominoResponsavel }];
+
+  const item = casas.find(c => c.quadraLote === qdLote) || { quadraLote: qdLote, condomino: p.condominoResponsavel };
+
+  // Atualiza classe ativa dos chips
+  const chips = document.querySelectorAll('#chipsMultiDestinatarios .chip-dest');
+  chips.forEach(chip => {
+    if (chip.textContent.includes(qdLote)) {
+      chip.classList.add('active');
+    } else {
+      chip.classList.remove('active');
+    }
+  });
+
+  montarTextoWhatsIndividual(item.quadraLote, item.condomino, p.nome, p.categoria, p.vencimentoFacial);
+  document.getElementById('modalWhatsMoradorDestino').textContent = moradorWhatsAtual;
+  document.getElementById('modalWhatsText').textContent = textoWhatsAtual;
+  document.getElementById('modalWhatsLink').href = linkWhatsAtual;
+}
+
+function montarTextoWhatsIndividual(qdLote, moradorNome, funcNome, funcCargo, funcVenc) {
+  let template = (appSettings && appSettings.whatsappTemplate) ? appSettings.whatsappTemplate : TEMPLATE_PADRAO_WHATSAPP;
+  const moradorTitular = extrairTitularesString(moradorNome) || 'Prezado(a) Condômino(a)';
   let funcListStr = `⚠️ *${funcNome}* (${funcCargo})\n   • Data de Vencimento Facial: *${funcVenc}*\n\n`;
 
   let msg = template
-    .replace(/{MORADOR}/g, moradorNome)
+    .replace(/{MORADOR}/g, moradorTitular)
     .replace(/{UNIDADE}/g, qdLote)
     .replace(/{FUNCIONARIOS}/g, funcListStr);
 
   textoWhatsAtual = msg;
-  linkWhatsAtual = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
-  moradorWhatsAtual = `${moradorNome} (${qdLote})`;
+  moradorWhatsAtual = `${moradorTitular} (${qdLote})`;
 
+  // Tenta vincular o telefone do morador se houver no cadastro da unidade
+  let phoneParam = '';
+  const uni = allUnidades.find(u => u.chavePrimaria.toLowerCase() === qdLote.toLowerCase());
+  if (uni && Array.isArray(uni.condominos) && uni.condominos.length > 0) {
+    const cMatch = uni.condominos.find(c => c.telefone && c.telefone.replace(/\D/g, '').length >= 10);
+    if (cMatch) {
+      let num = cMatch.telefone.replace(/\D/g, '');
+      if (num.length >= 10 && num.length <= 11) num = '55' + num;
+      phoneParam = `&phone=${num}`;
+    }
+  }
+
+  linkWhatsAtual = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}${phoneParam}`;
+}
+
+function abrirWhatsAppModalParaMorador(qdLote, moradorNome, funcNome, funcCargo, funcVenc) {
+  montarTextoWhatsIndividual(qdLote, moradorNome, funcNome, funcCargo, funcVenc);
+  const boxMulti = document.getElementById('boxWhatsMultiDestinatarios');
+  if (boxMulti) boxMulti.style.display = 'none';
   abrirWhatsAppModal();
 }
 
 function fecharWhatsAppModal() {
   document.getElementById('modalWhatsApp').classList.remove('open');
+}
+
+// ============================================================
+// MODAL DE RESIDÊNCIAS ATENDIDAS (MULTI-CASAS)
+// ============================================================
+
+function abrirModalMultiCasas(prestadorId) {
+  const p = allPrestadores.find(item => item.id === prestadorId);
+  if (!p) return;
+
+  const casas = (Array.isArray(p.unidadesAtendidas) && p.unidadesAtendidas.length > 0)
+    ? p.unidadesAtendidas
+    : [{ quadraLote: p.quadraLote || 'Geral', condomino: p.condominoResponsavel, diasSemana: p.diasSemana, vencimentoFacial: p.vencimentoFacial, observacoes: p.observacoes }];
+
+  document.getElementById('modalMultiTitulo').textContent = `Residências Atendidas (${casas.length} Casas)`;
+  document.getElementById('modalMultiSubtitulo').textContent = `${p.nome} • ${p.categoria}`;
+
+  const agora = new Date();
+  agora.setHours(0, 0, 0, 0);
+  const analise = p.analiseVencimento || (typeof classificarVencimento === 'function' ? classificarVencimento(p.vencimentoFacial, agora) : { label: p.vencimentoFacial || 'Válido', status: 'VALIDO' });
+  
+  let tagClass = 'regular';
+  if (analise.status === 'VENCIDO') tagClass = 'vencido';
+  else if (analise.status === 'HOJE') tagClass = 'hoje';
+  else if (analise.status === 'AMANHA') tagClass = 'amanha';
+  else if (analise.status === '7DIAS' || analise.status === 'CRITICO') tagClass = 'critico';
+  else if (analise.status === 'SEM_FACIAL') tagClass = 'neutro';
+
+  document.getElementById('modalMultiBanner').innerHTML = `
+    <div class="info-main">
+      <strong>${p.nome}</strong>
+      <span><i class="ph-bold ph-identification-card"></i> ${p.categoria} ${p.cracha ? `• Crachá: ${p.cracha}` : ''}</span>
+    </div>
+    <div class="facial-info">
+      <span class="venc-label">Biometria Facial</span>
+      <span class="venc-data">${p.vencimentoFacial || 'Sem facial / Libera App'}</span>
+      <div><span class="tag-status ${tagClass}" style="margin-top: 4px; display: inline-block;">${analise.label || 'Válido'}</span></div>
+    </div>
+  `;
+
+  const listaEl = document.getElementById('modalMultiLista');
+  listaEl.innerHTML = casas.map(c => {
+    const morador = extrairTitularesString(c.condomino) || 'Condômino não identificado';
+    const dias = c.diasSemana || p.diasSemana || 'Variável';
+    const obs = (c.observacoes && c.observacoes !== '-') ? c.observacoes : (p.observacoes || '');
+
+    return `
+      <div class="multi-casa-item">
+        <div class="casa-info">
+          <span class="badge-lote-card">${c.quadraLote}</span>
+          <div class="casa-dados">
+            <span class="morador-nome" title="${morador}">${morador}</span>
+            <div class="casa-detalhe">
+              <span><i class="ph-bold ph-calendar"></i> ${dias}</span>
+              ${obs ? `<span><i class="ph-bold ph-note"></i> ${obs}</span>` : ''}
+            </div>
+          </div>
+        </div>
+        <div class="casa-acoes">
+          <button class="btn-mini-ver" onclick="fecharModalMultiCasas(); abrirResidencia('${c.quadraLote.replace(/'/g, "\\'")}')" title="Abrir ficha desta residência">
+            <i class="ph-bold ph-house-line"></i> Ver Casa
+          </button>
+          <button class="btn-mini-whats" onclick="fecharModalMultiCasas(); abrirWhatsAppModalParaPrestador('${p.id}', '${c.quadraLote.replace(/'/g, "\\'")}')" title="Enviar WhatsApp para este condômino">
+            <i class="ph-bold ph-whatsapp-logo"></i> WhatsApp
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  document.getElementById('modalMultiCasas').classList.add('open');
+}
+
+function fecharModalMultiCasas() {
+  document.getElementById('modalMultiCasas').classList.remove('open');
 }
 
 function copiarTextoWhats() {
@@ -1326,6 +1533,13 @@ function aoDigitarBuscaGlobal(termo) {
     const morador = formatarMoradorCompacto(p.condominoResponsavel);
     const qdLote = p.quadraLote || 'Sem lote definido';
 
+    const qtdCasas = (Array.isArray(p.unidadesAtendidas) && p.unidadesAtendidas.length > 0) ? p.unidadesAtendidas.length : (p.totalCasas || 1);
+    const multiCasasBadge = qtdCasas > 1
+      ? `<button class="badge-multi-casas" onclick="fecharDropdownBuscaGlobal(); abrirModalMultiCasas('${p.id}')" title="Prestador atende ${qtdCasas} casas no condomínio. Clique para ver todas.">
+          <i class="ph-bold ph-buildings"></i> ${qtdCasas} casas
+        </button>`
+      : '';
+
     return `
       <div class="search-result-item">
         <div class="col-prestador">
@@ -1343,7 +1557,10 @@ function aoDigitarBuscaGlobal(termo) {
         </div>
 
         <div class="col-residencia">
-          <span class="lote-pill">${qdLote}</span>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span class="lote-pill">${qdLote}</span>
+            ${multiCasasBadge}
+          </div>
           <span class="morador-text" title="Morador responsável"><i class="ph-bold ph-user"></i> ${morador}</span>
         </div>
 
@@ -1425,12 +1642,8 @@ function irParaResidenciaDoPrestador(qdLote) {
 }
 
 function abrirWhatsDoPrestador(prestadorId) {
-  const p = allPrestadores.find(item => item.id === prestadorId);
-  if (!p) return;
-  const qdLote = p.quadraLote || 'Residência';
-  const morador = p.condominoResponsavel || 'Morador Responsável';
-  abrirWhatsAppModalParaMorador(qdLote, morador, p.nome, p.categoria || 'Prestador', p.vencimentoFacial || 'Não informada');
   fecharDropdownBuscaGlobal();
+  abrirWhatsAppModalParaPrestador(prestadorId);
 }
 
 // ============================================================

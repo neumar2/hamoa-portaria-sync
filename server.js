@@ -106,7 +106,7 @@ app.get('/api/unidades', (req, res) => {
   const { busca } = req.query;
 
   let resultado = unidades.map(u => {
-    const prestadoresDaUnidade = prestadores.filter(p => p.quadraLote === u.chavePrimaria);
+    const prestadoresDaUnidade = db.getPrestadoresPorUnidade(u.chavePrimaria);
     return {
       ...u,
       totalPrestadores: prestadoresDaUnidade.length,
@@ -132,7 +132,7 @@ app.get('/api/unidades/:id', (req, res) => {
   const unidade = db.getUnidadeById(req.params.id);
   if (!unidade) return res.status(404).json({ error: 'Unidade não encontrada' });
   const refDate = getTodayRef();
-  const prestadores = db.getPrestadores().filter(p => p.quadraLote === unidade.chavePrimaria);
+  const prestadores = db.getPrestadoresPorUnidade(unidade.chavePrimaria);
   res.json({
     ...unidade,
     prestadores: prestadores.map(p => ({

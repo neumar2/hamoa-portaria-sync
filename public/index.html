@@ -526,7 +526,16 @@
         <button class="close-x" onclick="fecharWhatsAppModal()"><i class="ph-bold ph-x"></i></button>
       </div>
       <div class="modal-body">
-        <p class="modal-instruction">A mensagem foi consolidada automaticamente com todos os funcionários e datas de vencimento:</p>
+        <!-- SELETOR DINÂMICO QUANDO O PRESTADOR ATENDE MÚLTIPLAS CASAS -->
+        <div id="boxWhatsMultiDestinatarios" class="multi-destinatarios-selector" style="display: none;">
+          <div class="label-multi-dest">
+            <i class="ph-bold ph-buildings"></i>
+            <span>Este colaborador atende múltiplas residências. Selecione para quem enviar:</span>
+          </div>
+          <div class="chips-container" id="chipsMultiDestinatarios"></div>
+        </div>
+
+        <p class="modal-instruction" id="lblModalWhatsInstruction">A mensagem foi consolidada automaticamente com todos os funcionários e datas de vencimento:</p>
         <div class="whatsapp-box" id="modalWhatsText"></div>
         <div class="modal-buttons">
           <button class="btn-cancel" onclick="fecharWhatsAppModal()">Fechar</button>
@@ -615,6 +624,40 @@
           <button class="btn-primary-action" id="btnSalvarEdicao" onclick="salvarEdicaoPrestador()">
             <i class="ph-bold ph-floppy-disk"></i> Salvar Alterações
           </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE RESIDÊNCIAS ATENDIDAS (PRESTADOR MULTI-CASAS) -->
+  <div class="modal-overlay" id="modalMultiCasas">
+    <div class="modal-box modal-multi-casas-box">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <i class="ph-bold ph-buildings" style="color: #2563eb; font-size: 24px;"></i>
+          <div>
+            <h3 id="modalMultiTitulo">Residências Atendidas</h3>
+            <span class="modal-subtitle" id="modalMultiSubtitulo">Profissional com autorização em múltiplas unidades</span>
+          </div>
+        </div>
+        <button class="close-x" onclick="fecharModalMultiCasas()"><i class="ph-bold ph-x"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="multi-casas-banner" id="modalMultiBanner">
+          <!-- Popula com dados do colaborador: Nome, Cargo, Validade Facial -->
+        </div>
+
+        <div class="multi-casas-instrucao">
+          <i class="ph-bold ph-info"></i>
+          <span>Qualquer um dos condôminos abaixo pode autorizar a entrada ou renovar a biometria facial:</span>
+        </div>
+
+        <div class="multi-casas-list" id="modalMultiLista">
+          <!-- Popula com os cards das residências -->
+        </div>
+
+        <div class="modal-buttons" style="margin-top: 20px;">
+          <button class="btn-cancel" onclick="fecharModalMultiCasas()">Fechar Janela</button>
         </div>
       </div>
     </div>

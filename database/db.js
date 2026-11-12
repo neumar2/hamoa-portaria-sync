@@ -138,6 +138,18 @@ class Database {
     return this.data.prestadores.find(p => p.id === id);
   }
 
+  getPrestadoresPorUnidade(chavePrimaria) {
+    if (!chavePrimaria) return [];
+    const norm = chavePrimaria.trim().toUpperCase();
+    return (this.data.prestadores || []).filter(p => {
+      if (p.quadraLote && p.quadraLote.trim().toUpperCase() === norm) return true;
+      if (Array.isArray(p.unidadesAtendidas)) {
+        return p.unidadesAtendidas.some(u => u.quadraLote && u.quadraLote.trim().toUpperCase() === norm);
+      }
+      return false;
+    });
+  }
+
   savePrestador(prestador) {
     const idx = this.data.prestadores.findIndex(p => p.id === prestador.id);
     prestador.atualizadoEm = new Date().toISOString();

@@ -103,6 +103,25 @@
       "categoria": "Piscineiro",
       "quadraLote": "QD 01 - LT 02",
       "condominoResponsavel": "Mariana Oliveira Costa",
+      "unidadesAtendidas": [
+        {
+          "quadraLote": "QD 01 - LT 02",
+          "quadraLoteOriginal": "01-02",
+          "condomino": "Mariana Oliveira Costa",
+          "diasSemana": "Terça e Quinta",
+          "vencimentoFacial": "15/11/2026",
+          "observacoes": "Limpeza semanal da piscina"
+        },
+        {
+          "quadraLote": "QD 02 - LT 05",
+          "quadraLoteOriginal": "02-05",
+          "condomino": "Roberto Souza Mendes",
+          "diasSemana": "Quarta e Sexta",
+          "vencimentoFacial": "15/11/2026",
+          "observacoes": "Tratamento de água"
+        }
+      ],
+      "totalCasas": 2,
       "vencimentoFacial": "15/11/2026",
       "dtCadFace": "15/05/2026",
       "diasSemana": "Terça e Quinta",
@@ -192,3 +211,4 @@
   ],
   "notificationLogs": []
 }
+

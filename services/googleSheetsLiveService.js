@@ -230,18 +230,16 @@ async function fetchPauloSheetsLive() {
       const rows = parseCSV(csvText);
       let count = 0;
 
+      let currentItem = null;
+
       for (const row of rows) {
         if (!row || row.length === 0) continue;
         const col0 = row[0] || '';
         const nameClean = limparPrefixo(col0, /^(COLABORADOR[A]?|EMPRESA|FUNCION[AÁ]RIO|NOME)[:\s\-]+/i);
 
-        // Ignora cabeçalhos vazios ou genéricos
-        if (!nameClean || ['COLABORADOR', 'COLABORADORA', 'EMPRESA', 'FUNCIONÁRIO', 'NOME', '-', '--'].includes(nameClean.toUpperCase())) {
-          continue;
-        }
-        if (nameClean.length < 3 || /^\d+$/.test(nameClean)) {
-          continue;
-        }
+        // Ignora cabeçalhos explícitos
+        const isHeader = ['COLABORADOR', 'COLABORADORA', 'EMPRESA', 'FUNCIONÁRIO', 'NOME', '-', '--'].includes(nameClean.toUpperCase());
+        if (isHeader) continue;
 
         const condomino = limparPrefixo(row[1] || '', /^(COND[OÔ]MINO[S]?|RESPONS[AÁ]VEL|PROPRIET[AÁ]RIO)[:\s\-]+/i);
         const qdLoteRaw = limparPrefixo(row[2] || '', /^(QUADRA\s*E\s*LOTE|QUADRA|LOTE|QD\/LT|QD|LT)[:\s\-]+/i);
@@ -254,25 +252,73 @@ async function fetchPauloSheetsLive() {
           vencimento = '';
         }
 
-        const normKey = normalizarNome(nameClean);
-        const item = {
-          nome: nameClean,
-          nomeNormalizado: normKey,
-          profissao: tab.profissao,
-          aba: tab.name,
-          condomino: condomino,
-          quadraLote: normalizarQuadraLote(qdLoteRaw),
-          quadraLoteOriginal: qdLoteRaw,
-          diasSemana: diasSemana || 'DIÁRIO',
-          vencimentoFacial: vencimento,
-          observacoes: observacoes && observacoes !== '-' ? observacoes : '',
-          origem: 'Google Sheets (Paulo)',
-          atualizadoEm: new Date().toISOString()
-        };
+        if (nameClean && nameClean.length >= 3 && !/^\d+$/.test(nameClean)) {
+          const normKey = normalizarNome(nameClean);
+          const qdNorm = normalizarQuadraLote(qdLoteRaw);
 
-        resultMap[normKey] = item;
-        allList.push(item);
-        count++;
+          currentItem = {
+            nome: nameClean,
+            nomeNormalizado: normKey,
+            profissao: tab.profissao,
+            aba: tab.name,
+            condomino: condomino,
+            quadraLote: qdNorm,
+            quadraLoteOriginal: qdLoteRaw,
+            diasSemana: diasSemana || 'DIÁRIO',
+            vencimentoFacial: vencimento,
+            observacoes: observacoes && observacoes !== '-' ? observacoes : '',
+            unidadesAtendidas: [],
+            totalCasas: 1,
+            origem: 'Google Sheets (Paulo)',
+            atualizadoEm: new Date().toISOString()
+          };
+
+          if (qdNorm && qdNorm !== 'SEM LOTE') {
+            currentItem.unidadesAtendidas.push({
+              quadraLote: qdNorm,
+              quadraLoteOriginal: qdLoteRaw,
+              condomino: condomino,
+              diasSemana: currentItem.diasSemana,
+              vencimentoFacial: currentItem.vencimentoFacial,
+              observacoes: currentItem.observacoes
+            });
+          }
+
+          if (resultMap[normKey]) {
+            // Se já existia, mescla as unidades atendidas para não perder nenhuma casa
+            const existente = resultMap[normKey];
+            if (currentItem.unidadesAtendidas.length > 0) {
+              currentItem.unidadesAtendidas.forEach(u => {
+                if (!existente.unidadesAtendidas.some(eu => eu.quadraLote === u.quadraLote)) {
+                  existente.unidadesAtendidas.push(u);
+                }
+              });
+            }
+            existente.totalCasas = existente.unidadesAtendidas.length || 1;
+            currentItem = existente;
+          } else {
+            currentItem.totalCasas = currentItem.unidadesAtendidas.length || 1;
+            resultMap[normKey] = currentItem;
+            allList.push(currentItem);
+            count++;
+          }
+        } else if (currentItem && (condomino || qdLoteRaw)) {
+          // Linha de continuação / célula mesclada de prestador multi-casas (ex: Jardineiro, Piscineiro)
+          const qdNorm = normalizarQuadraLote(qdLoteRaw);
+          if (qdNorm && qdNorm !== 'SEM LOTE') {
+            if (!currentItem.unidadesAtendidas.some(u => u.quadraLote === qdNorm)) {
+              currentItem.unidadesAtendidas.push({
+                quadraLote: qdNorm,
+                quadraLoteOriginal: qdLoteRaw,
+                condomino: condomino || currentItem.condomino,
+                diasSemana: diasSemana || currentItem.diasSemana,
+                vencimentoFacial: vencimento || currentItem.vencimentoFacial,
+                observacoes: (observacoes && observacoes !== '-') ? observacoes : currentItem.observacoes
+              });
+              currentItem.totalCasas = currentItem.unidadesAtendidas.length;
+            }
+          }
+        }
       }
 
       tabStats[tab.name] = count;
