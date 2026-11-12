@@ -1,0 +1,16 @@
+{
+  "name": "hamoa-portaria-sync",
+  "version": "1.0.0",
+  "description": "Sistema de Gestão, Monitoramento de Acessos Faciais e Alertas de Vencimento por Quadra e Lote - Hamoa Resort Residencial",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "seed": "node database/seed.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.1"
+  }
+}

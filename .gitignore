@@ -1,0 +1,33 @@
+# Dependências
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Variáveis de Ambiente e Credenciais (LGPD / Segurança)
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# Bancos de Dados com Dados Reais de Moradores e Prestadores (LGPD)
+database/data.json
+database/mdc_users_raw.txt
+database/sheets_professions.json
+database/*.bak
+database/*.tmp
+database/*.csv
+
+# Backups e Logs
+logs/
+*.log
+backup/
+bkp/
+
+# Arquivos temporários do Windows e IDEs
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+task_service.xml

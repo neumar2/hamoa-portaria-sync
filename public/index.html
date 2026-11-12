@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>vencimento.hamoa // Controle de Acessos e Biometria Facial</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- CABEÇALHO LIMPO E PROFISSIONAL -->
+  <header class="top-nav">
+    <div class="nav-container">
+      <div class="brand">
+        <div class="brand-icon">
+          <i class="ph-bold ph-shield-check"></i>
+        </div>
+        <div class="brand-text">
+          <div class="brand-title"><strong>vencimento.hamoa</strong></div>
+          <div class="brand-sub">Hamoa Resort Residencial &bull; Gestão de Biometria Facial</div>
+        </div>
+      </div>
+
+      <!-- SELETOR PRINCIPAL DE MODO (EXPERIÊNCIA DO USUÁRIO) -->
+      <nav class="mode-tabs">
+        <button class="mode-tab active" id="tabBtnCalendario" onclick="trocarModoPrincipal('calendario')">
+          <i class="ph-bold ph-calendar"></i>
+          <span>1. Calendário Interativo</span>
+        </button>
+        <button class="mode-tab" id="tabBtnResidencia" onclick="trocarModoPrincipal('residencia')">
+          <i class="ph-bold ph-house-line"></i>
+          <span>2. Consultar Residência (Quadra/Lote)</span>
+        </button>
+        <button class="mode-tab" id="tabBtnRadar" onclick="trocarModoPrincipal('radar')">
+          <i class="ph-bold ph-lightning"></i>
+          <span>3. Radar de Prazos Rápidos</span>
+        </button>
+        <button class="mode-tab" id="tabBtnConfig" onclick="trocarModoPrincipal('configuracoes')">
+          <i class="ph-bold ph-gear"></i>
+          <span>4. Configurações</span>
+        </button>
+      </nav>
+
+      <div class="nav-meta">
+        <button id="btnSyncPauloSheets" class="btn-sync-sheets" onclick="sincronizarPlanilhaPaulo()" title="Sincronizar com a Planilha Oficial do Paulo (Google Sheets)">
+          <i class="ph-bold ph-arrows-clockwise" id="iconSyncPaulo"></i>
+          <span>Planilha do Paulo</span>
+        </button>
+        <div class="date-badge">
+          <i class="ph-bold ph-clock"></i>
+          <span id="badgeHojeTexto">Hoje: <strong id="valHojeTexto">--/--/----</strong></span>
+        </div>
+        <div class="nav-status">
+          <span class="live-dot"></span>
+          <span>MDC 4WEB Online</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="page-container">
+
+    <!-- BARRA DE CONSULTA RÁPIDA GLOBAL DE PRESTADORES -->
+    <section class="global-search-section">
+      <div class="global-search-card">
+        <div class="global-search-box">
+          <i class="ph-bold ph-magnifying-glass search-leading-icon"></i>
+          <input type="text" id="inputBuscaGlobalPrestador" 
+                 placeholder="🔍 Digite o nome do prestador ou funcionário para consultar vencimento facial (ex: Carlos, Ana, Marcos...)" 
+                 autocomplete="off" 
+                 oninput="aoDigitarBuscaGlobal(this.value)">
+          <button class="btn-clear-search" id="btnClearSearchGlobal" onclick="limparBuscaGlobal()" title="Limpar busca" style="display: none;">
+            <i class="ph-bold ph-x"></i>
+          </button>
+        </div>
+        
+        <!-- DROPDOWN DE RESULTADOS FLUTUANTES DA CONSULTA -->
+        <div class="global-search-results" id="dropdownResultadosGlobal" style="display: none;">
+          <div class="results-header">
+            <span id="labelContadorBuscaGlobal">Resultados da consulta</span>
+            <span class="results-tip"><kbd>ESC</kbd> para fechar</span>
+          </div>
+          <div class="results-list" id="listaResultadosGlobal">
+            <!-- Cards gerados dinamicamente via JS -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- MODO 1: CALENDÁRIO INTERATIVO CLICÁVEL (EXPLORAÇÃO POR QUALQUER DATA)    -->
+    <!-- ========================================================================= -->
+    <section class="view-panel active" id="viewCalendario">
+      
+      <!-- BARRA DE CONTROLE E BUSCA RÁPIDA DE DATA -->
+      <div class="calendar-control-bar">
+        <div class="month-navigator">
+          <button class="btn-nav-cal" onclick="navegarMes(-1)" title="Mês Anterior">
+            <i class="ph-bold ph-caret-left"></i>
+          </button>
+          <div class="current-month-display">
+            <i class="ph-bold ph-calendar-blank"></i>
+            <span id="labelMesAnoAtual">Novembro de 2026</span>
+          </div>
+          <button class="btn-nav-cal" onclick="navegarMes(1)" title="Próximo Mês">
+            <i class="ph-bold ph-caret-right"></i>
+          </button>
+          <button class="btn-today" onclick="irParaHojeNoCalendario()">
+            <i class="ph-bold ph-arrow-u-up-left"></i> Ir para Hoje (04/11)
+          </button>
+        </div>
+
+        <!-- BUSCA DIRETA POR DATA (Ex: 12/12/2026) -->
+        <div class="direct-date-search">
+          <label for="inputDataDireta"><i class="ph-bold ph-magnifying-glass"></i> Consultar Dia Específico:</label>
+          <div class="search-input-group">
+            <input type="text" id="inputDataDireta" placeholder="Ex: 12/12/2026" onkeydown="aoTeclarDataDireta(event)">
+            <button class="btn-buscar-data" onclick="buscarDataDireta()">
+              <span>Ver Dia</span>
+              <i class="ph-bold ph-arrow-right"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CHIPS DE ATALHO RÁPIDO PARA DATAS COM VENCIMENTOS -->
+      <div class="quick-dates-bar">
+        <span class="quick-label">Datas com Vencimentos:</span>
+        <button class="quick-chip" onclick="selecionarDataDireta('04/11/2026')">⚡ Hoje (04/11) • 1 funcionário</button>
+        <button class="quick-chip" onclick="selecionarDataDireta('05/11/2026')">🔔 Amanhã (05/11) • 1 funcionário</button>
+        <button class="quick-chip" onclick="selecionarDataDireta('11/11/2026')">⚠️ 11/11/2026 • 5 funcionários</button>
+        <button class="quick-chip highlight" onclick="selecionarDataDireta('12/12/2026')">🎯 12/12/2026 • 1 funcionário</button>
+        <button class="quick-chip" onclick="selecionarDataDireta('17/12/2026')">📅 17/12/2026 • 4 funcionários</button>
+        <button class="quick-chip" onclick="selecionarDataDireta('21/12/2026')">📅 21/12/2026 • 4 funcionários</button>
+        <button class="quick-chip" onclick="selecionarDataDireta('15/01/2027')">📅 15/01/2027 • 3 funcionários</button>
+      </div>
+
+      <!-- GRADE VISUAL DO MÊS INTEIRO (TOTALMENTE CLICÁVEL) -->
+      <div class="calendar-card">
+        <div class="calendar-weekdays">
+          <div>DOM</div>
+          <div>SEG</div>
+          <div>TER</div>
+          <div>QUA</div>
+          <div>QUI</div>
+          <div>SEX</div>
+          <div>SÁB</div>
+        </div>
+        <div class="calendar-days-grid" id="gridDiasCalendario">
+          <!-- Gerado dinamicamente via JS com células clicáveis -->
+        </div>
+      </div>
+
+      <!-- PAINEL DA AGENDA DO DIA SELECIONADO -->
+      <div class="day-agenda-section" id="painelAgendaDia">
+        <div class="agenda-header">
+          <div class="agenda-title-wrap">
+            <div class="agenda-badge" id="agendaDataBadge">12/12/2026</div>
+            <div>
+              <h3 id="agendaTituloDia">Vencimentos em 12 de Dezembro de 2026</h3>
+              <p id="agendaSubtituloDia">1 colaborador(a) com biometria facial a vencer neste dia</p>
+            </div>
+          </div>
+          <div class="agenda-meta-info" id="agendaPrazoInfo">
+            <span class="prazo-pill info">Faltam 38 dias</span>
+          </div>
+        </div>
+
+        <div class="agenda-table-card">
+          <table class="simple-table">
+            <thead>
+              <tr>
+                <th>Funcionário(a)</th>
+                <th>Função / Cargo</th>
+                <th style="width: 140px;">Quadra e Lote</th>
+                <th>Morador(a) Responsável</th>
+                <th>Vencimento Facial</th>
+                <th>Situação</th>
+                <th style="text-align: right; width: 240px;">Ações Rápidas</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyAgendaDia">
+              <!-- Injetado dinamicamente pelo JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- MODO 2: CONSULTA POR RESIDÊNCIA (QUADRA -> LOTE -> MORADOR / LEANDRO)     -->
+    <!-- ========================================================================= -->
+    <section class="view-panel" id="viewResidencia">
+      
+      <!-- SELETOR RÁPIDO: QUADRA -> LOTE -->
+      <div class="selection-card">
+        <div class="instruction-title">
+          <i class="ph-bold ph-magnifying-glass-plus"></i>
+          <div>
+            <h3>Consultar Morador e Funcionários da Casa</h3>
+            <p>Selecione a <strong>Quadra</strong> e depois o <strong>Lote</strong>, ou digite o nome do morador:</p>
+          </div>
+        </div>
+
+        <div class="selector-row">
+          <!-- 1. NÚMERO DA QUADRA -->
+          <div class="selector-field">
+            <label for="selectQuadra"><i class="ph-bold ph-squares-four"></i> 1. Número da Quadra</label>
+            <select id="selectQuadra" onchange="aoMudarQuadra()">
+              <option value="">Selecione a Quadra...</option>
+            </select>
+          </div>
+
+          <!-- 2. NÚMERO DO LOTE -->
+          <div class="selector-field">
+            <label for="selectLote"><i class="ph-bold ph-house-line"></i> 2. Número do Lote</label>
+            <select id="selectLote" onchange="aoMudarLote()" disabled>
+              <option value="">Aguardando seleção da Quadra...</option>
+            </select>
+          </div>
+
+          <div class="divider-ou">OU</div>
+
+          <!-- 3. BUSCA POR NOME DO MORADOR -->
+          <div class="selector-field flex-grow">
+            <label for="inputBuscaMorador"><i class="ph-bold ph-user"></i> Buscar por Nome do Morador</label>
+            <div class="input-with-icon">
+              <i class="ph-bold ph-magnifying-glass"></i>
+              <input type="text" id="inputBuscaMorador" placeholder="Digite o nome: Ex: Carlos Silva, Maria Santos..." oninput="aoBuscarMorador()">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FICHA DA CASA SELECIONADA -->
+      <div class="result-section" id="sectionResultado">
+        <div class="residence-banner">
+          <div class="banner-title">
+            <div class="badge-lote" id="resumoChaveLote">-</div>
+            <div class="resident-info">
+              <span class="label">Morador(es) Responsável(is):</span>
+              <strong id="resumoMoradorNome">Selecione uma residência</strong>
+            </div>
+          </div>
+
+          <div class="banner-action">
+            <button class="btn-whatsapp-large" id="btnDispararWhatsApp" onclick="abrirWhatsAppModal()">
+              <i class="ph-bold ph-whatsapp-logo"></i>
+              <span>Avisar Morador via WhatsApp</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- TABELA EXCLUSIVA DOS FUNCIONÁRIOS DO MORADOR -->
+        <div class="table-card">
+          <div class="table-header">
+            <div>
+              <h3>Funcionários Vinculados a Este Morador</h3>
+              <span class="subtext">Apenas os funcionários autorizados para esta residência específica</span>
+            </div>
+            <span class="count-badge" id="resumoTotalColabs">0 funcionários</span>
+          </div>
+
+          <table class="simple-table">
+            <thead>
+              <tr>
+                <th>Nome do Funcionário</th>
+                <th>Função / Cargo</th>
+                <th>Dias de Acesso</th>
+                <th>Vencimento Facial</th>
+                <th>Situação do Acesso</th>
+                <th style="text-align: right;">Ação</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyColaboradoresCasa">
+              <!-- Injetado via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- MODO 3: RADAR DE PRAZOS RÁPIDOS (HOJE, AMANHÃ, 7 DIAS, VENCIDOS)          -->
+    <!-- ========================================================================= -->
+    <section class="view-panel" id="viewRadar">
+      
+      <div class="dashboards-grid">
+        <!-- CARD 1: VENCEM HOJE -->
+        <div class="dash-card card-hoje" id="dashCardHoje" onclick="selecionarFiltroDashboard('hoje', this)">
+          <div class="dash-card-header">
+            <span class="dash-label">VENCEM HOJE</span>
+            <span class="dash-icon"><i class="ph-bold ph-lightning"></i></span>
+          </div>
+          <div class="dash-value" id="valHoje">0</div>
+          <div class="dash-desc">Data limite: <strong>Hoje (04/11)</strong></div>
+          <div class="dash-badge urgent">Ação Imediata</div>
+        </div>
+
+        <!-- CARD 2: VENCEM AMANHÃ -->
+        <div class="dash-card card-amanha" id="dashCardAmanha" onclick="selecionarFiltroDashboard('amanha', this)">
+          <div class="dash-card-header">
+            <span class="dash-label">VENCEM AMANHÃ</span>
+            <span class="dash-icon"><i class="ph-bold ph-bell-ringing"></i></span>
+          </div>
+          <div class="dash-value" id="valAmanha">0</div>
+          <div class="dash-desc">Data limite: <strong>Amanhã (05/11)</strong></div>
+          <div class="dash-badge warning">Avisar Morador Hoje</div>
+        </div>
+
+        <!-- CARD 3: EM ATÉ 7 DIAS -->
+        <div class="dash-card card-7dias" id="dashCard7dias" onclick="selecionarFiltroDashboard('7dias', this)">
+          <div class="dash-card-header">
+            <span class="dash-label">EM ATÉ 7 DIAS</span>
+            <span class="dash-icon"><i class="ph-bold ph-calendar-blank"></i></span>
+          </div>
+          <div class="dash-value" id="val7dias">0</div>
+          <div class="dash-desc">Próximos 7 dias corridos</div>
+          <div class="dash-badge alert">Notificação Preventiva</div>
+        </div>
+
+        <!-- CARD 4: EM 8 A 15 DIAS -->
+        <div class="dash-card card-15dias" id="dashCard15dias" onclick="selecionarFiltroDashboard('15dias', this)">
+          <div class="dash-card-header">
+            <span class="dash-label">EM 8 A 15 DIAS</span>
+            <span class="dash-icon"><i class="ph-bold ph-clock"></i></span>
+          </div>
+          <div class="dash-value" id="val15dias">0</div>
+          <div class="dash-desc">Próxima quinzena</div>
+          <div class="dash-badge info">Planejamento</div>
+        </div>
+
+        <!-- CARD 5: JÁ VENCIDOS -->
+        <div class="dash-card card-vencidos active" id="dashCardVencidos" onclick="selecionarFiltroDashboard('vencidos', this)">
+          <div class="dash-card-header">
+            <span class="dash-label">JÁ VENCIDOS</span>
+            <span class="dash-icon"><i class="ph-bold ph-warning-circle"></i></span>
+          </div>
+          <div class="dash-value" id="valVencidos">0</div>
+          <div class="dash-desc">Biometria expirada na portaria</div>
+          <div class="dash-badge danger">Bloqueio Iminente</div>
+        </div>
+      </div>
+
+      <!-- LISTA DINÂMICA DO RADAR -->
+      <div class="alerts-section">
+        <div class="section-headline">
+          <div>
+            <h2 id="tituloListaDinamica"><i class="ph-bold ph-warning-circle"></i> Moradores com Faciais Já Vencidas</h2>
+            <p id="subtituloListaDinamica">Biometria expirada na portaria; moradores precisam ser notificados urgentemente:</p>
+          </div>
+        </div>
+
+        <div class="alerts-table-card">
+          <table class="simple-table">
+            <thead>
+              <tr>
+                <th style="width: 130px;">Quadra / Lote</th>
+                <th style="width: 250px;">Nome do Morador</th>
+                <th>Funcionário(a) e Vencimento da Facial</th>
+                <th style="width: 140px;">Status</th>
+                <th style="text-align: right; width: 220px;">Ações Rápidas</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyAvisosRapidos">
+              <!-- Injetado via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- MODO 4: CONFIGURAÇÕES (PASTA DE BACKUP, TEXTO WHATSAPP, SINCRONIZAÇÃO)     -->
+    <!-- ========================================================================= -->
+    <section class="view-panel" id="viewConfiguracoes">
+      <div class="config-grid">
+        
+        <!-- CARD 1: PASTA DE BACKUP DIÁRIO & SINCRONIZAÇÃO -->
+        <div class="config-card">
+          <div class="config-card-header">
+            <div class="config-icon-badge blue">
+              <i class="ph-bold ph-database"></i>
+            </div>
+            <div>
+              <h3>Pasta de Backup Diário (.bak)</h3>
+              <p>Diretório onde os backups diários do banco MDC 4WEB são armazenados</p>
+            </div>
+          </div>
+
+          <div class="config-card-body">
+            <div class="form-group">
+              <label for="inputBackupPath"><i class="ph-bold ph-folder-notch-open"></i> Caminho da Pasta no Servidor:</label>
+              <div class="input-action-row">
+                <input type="text" id="inputBackupPath" class="input-text-clean" placeholder="D:\BKP-DIARIO">
+                <button class="btn-primary-action" onclick="salvarCaminhoBackup()">
+                  <i class="ph-bold ph-floppy-disk"></i> Salvar Pasta
+                </button>
+              </div>
+              <small class="helper-text">Padrão do servidor oficial de produção: <code>D:\BKP-DIARIO</code></small>
+            </div>
+
+            <!-- STATUS DO BACKUP DETECTADO -->
+            <div class="backup-status-box" id="boxBackupStatus">
+              <div class="backup-status-header">
+                <span class="status-indicator-badge live" id="badgeStatusBackup">
+                  <span class="dot"></span> Conectando à pasta...
+                </span>
+                <span class="backup-meta-path" id="labelCaminhoEfetivo">...</span>
+              </div>
+
+              <div class="backup-info-details" id="conteudoDetalhesBackup">
+                <div class="detail-row">
+                  <span class="detail-label">Arquivo mais recente detectado:</span>
+                  <strong class="detail-value highlight" id="valArquivoRecente">-</strong>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Tamanho do arquivo:</span>
+                  <span class="detail-value" id="valTamanhoBackup">-</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Data e hora da gravação:</span>
+                  <span class="detail-value" id="valDataModificacaoBackup">-</span>
+                </div>
+              </div>
+
+              <!-- BOTÃO DE SINCRONIZAÇÃO MANUAL -->
+              <div class="backup-actions-row">
+                <button class="btn-sync-now" id="btnSincronizarBackup" onclick="sincronizarBackupAgora()">
+                  <i class="ph-bold ph-arrows-clockwise"></i>
+                  <span>Sincronizar Agora com o Backup Mais Recente</span>
+                </button>
+                <button class="btn-refresh-info" onclick="carregarInfoBackup()" title="Recarregar arquivos">
+                  <i class="ph-bold ph-arrow-counter-clockwise"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- HISTÓRICO DE ARQUIVOS DISPONÍVEIS -->
+            <div class="backup-history-box">
+              <h4><i class="ph-bold ph-files"></i> Arquivos .bak Disponíveis na Pasta:</h4>
+              <ul class="backup-files-list" id="listaArquivosBackup">
+                <!-- Populado via JS -->
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- CARD 2: MODELO DE MENSAGEM DO WHATSAPP -->
+        <div class="config-card">
+          <div class="config-card-header">
+            <div class="config-icon-badge green">
+              <i class="ph-bold ph-whatsapp-logo"></i>
+            </div>
+            <div>
+              <h3>Texto Padrão da Notificação (WhatsApp)</h3>
+              <p>Personalize a mensagem enviada aos moradores quando houver biometria facial a vencer</p>
+            </div>
+          </div>
+
+          <div class="config-card-body">
+            <!-- VARIÁVEIS DINÂMICAS DISPONÍVEIS -->
+            <div class="tags-helper-bar">
+              <span class="tags-label">Inserir variável dinâmica:</span>
+              <button class="tag-chip-btn" onclick="inserirTagNoTemplate('{MORADOR}')" title="Insere o nome do morador responsável">
+                <i class="ph-bold ph-plus"></i> {MORADOR}
+              </button>
+              <button class="tag-chip-btn" onclick="inserirTagNoTemplate('{UNIDADE}')" title="Insere Quadra e Lote da residência">
+                <i class="ph-bold ph-plus"></i> {UNIDADE}
+              </button>
+              <button class="tag-chip-btn" onclick="inserirTagNoTemplate('{FUNCIONARIOS}')" title="Insere a lista dos funcionários com vencimento facial">
+                <i class="ph-bold ph-plus"></i> {FUNCIONARIOS}
+              </button>
+            </div>
+
+            <div class="form-group">
+              <label for="txtWhatsappTemplate"><i class="ph-bold ph-chat-text"></i> Modelo do Texto:</label>
+              <textarea id="txtWhatsappTemplate" rows="10" class="textarea-clean" oninput="aoDigitarTemplateWhats()"></textarea>
+            </div>
+
+            <div class="template-actions-row">
+              <button class="btn-primary-action green" onclick="salvarTemplateWhatsApp()">
+                <i class="ph-bold ph-floppy-disk"></i> Salvar Modelo de Mensagem
+              </button>
+              <button class="btn-secondary-action" onclick="restaurarTemplatePadrao()">
+                <i class="ph-bold ph-arrow-counter-clockwise"></i> Restaurar Texto Original
+              </button>
+            </div>
+
+            <!-- PRÉ-VISUALIZAÇÃO AO VIVO (COMO O MORADOR RECEBE) -->
+            <div class="live-preview-box">
+              <div class="preview-header">
+                <i class="ph-bold ph-eye"></i>
+                <span>Pré-Visualização ao Vivo (Exemplo: Residência Teste • QD 01 - LT 02):</span>
+              </div>
+              <div class="whatsapp-chat-bubble" id="boxLivePreviewWhats">
+                <!-- Atualizado em tempo real enquanto digita -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL DE PREVIEW E DISPARO DO WHATSAPP -->
+  <div class="modal-overlay" id="modalWhatsApp">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <i class="ph-bold ph-whatsapp-logo" style="color: #16a34a; font-size: 24px;"></i>
+          <div>
+            <h3>Mensagem Pronta para o Morador</h3>
+            <span class="modal-subtitle" id="modalWhatsMoradorDestino">Nome do Morador</span>
+          </div>
+        </div>
+        <button class="close-x" onclick="fecharWhatsAppModal()"><i class="ph-bold ph-x"></i></button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-instruction">A mensagem foi consolidada automaticamente com todos os funcionários e datas de vencimento:</p>
+        <div class="whatsapp-box" id="modalWhatsText"></div>
+        <div class="modal-buttons">
+          <button class="btn-cancel" onclick="fecharWhatsAppModal()">Fechar</button>
+          <button class="btn-copy" onclick="copiarTextoWhats()"><i class="ph-bold ph-copy"></i> Copiar Mensagem</button>
+          <a href="#" id="modalWhatsLink" target="_blank" class="btn-open-whats"><i class="ph-bold ph-paper-plane-tilt"></i> Abrir WhatsApp</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE EDIÇÃO DE COLABORADOR / VÍNCULO DE RESIDÊNCIA -->
+  <div class="modal-overlay" id="modalEditarPrestador">
+    <div class="modal-box modal-large">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <i class="ph-bold ph-user-gear" style="color: var(--primary-blue); font-size: 24px;"></i>
+          <div>
+            <h3>Editar Colaborador / Vínculo</h3>
+            <span class="modal-subtitle" id="editModalSubtitulo">Ajuste de cargo, residência autorizada e regras de acesso</span>
+          </div>
+        </div>
+        <button class="close-x" onclick="fecharModalEditar()"><i class="ph-bold ph-x"></i></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editPrestadorId">
+
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label for="editNome"><i class="ph-bold ph-identification-card"></i> Nome do Colaborador:</label>
+            <input type="text" id="editNome" class="input-text-clean" disabled style="background: #f1f5f9; font-weight: 700; color: #1e293b;">
+          </div>
+          <div class="form-group">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+              <label for="editCategoria" style="margin: 0;"><i class="ph-bold ph-briefcase"></i> Função / Cargo:</label>
+              <button type="button" class="btn-xs-clean" onclick="cadastrarNovaFuncaoModal()" style="font-size: 11.5px; color: var(--primary-blue); font-weight: 700; background: none; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; padding: 2px 4px;">
+                <i class="ph-bold ph-plus-circle" style="font-size: 14px;"></i> + Nova Função
+              </button>
+            </div>
+            <select id="editCategoria" class="select-clean" onchange="aoSelecionarCategoriaEdicao(this.value)">
+              <!-- Preenchido dinamicamente com todas as categorias do banco -->
+            </select>
+          </div>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label for="editQuadraLote"><i class="ph-bold ph-house-line"></i> Residência Vinculada (Quadra e Lote):</label>
+            <select id="editQuadraLote" class="select-clean" onchange="aoTrocarCasaEdicao(this.value)">
+              <!-- Carregado dinamicamente com todas as quadras e lotes -->
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="editCondomino"><i class="ph-bold ph-user"></i> Condômino Responsável:</label>
+            <input type="text" id="editCondomino" class="input-text-clean" placeholder="Nome do condômino titular">
+          </div>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label for="editDiasSemana"><i class="ph-bold ph-calendar-check"></i> Dias de Acesso Permitidos:</label>
+            <select id="editDiasSemana" class="select-clean">
+              <option value="DIÁRIO">DIÁRIO (Segunda a Domingo)</option>
+              <option value="SEGUNDA A SEXTA">SEGUNDA A SEXTA</option>
+              <option value="SEGUNDA A SÁBADO">SEGUNDA A SÁBADO</option>
+              <option value="SEGUNDA, QUARTA E SEXTA">SEGUNDA, QUARTA E SEXTA</option>
+              <option value="TERÇA E QUINTA">TERÇA E QUINTA</option>
+              <option value="FINAIS DE SEMANA">FINAIS DE SEMANA</option>
+              <option value="EVENTUAL / AVISO">EVENTUAL / SOB AVISO</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="editVencimento"><i class="ph-bold ph-clock-countdown"></i> Vencimento Facial:</label>
+            <input type="text" id="editVencimento" class="input-text-clean" placeholder="DD/MM/AAAA">
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label for="editObservacoes"><i class="ph-bold ph-notepad"></i> Observações Internas da Portaria:</label>
+          <textarea id="editObservacoes" class="textarea-clean" rows="2" placeholder="Ex: Autorizado via WhatsApp pelo morador; chave na portaria; etc."></textarea>
+        </div>
+
+        <div id="editHistoricoBox" style="font-size: 11px; color: #64748b; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 6px; padding: 8px 12px; margin-bottom: 16px; display: none;"></div>
+
+        <div class="modal-buttons">
+          <button class="btn-cancel" onclick="fecharModalEditar()">Cancelar</button>
+          <button class="btn-primary-action" id="btnSalvarEdicao" onclick="salvarEdicaoPrestador()">
+            <i class="ph-bold ph-floppy-disk"></i> Salvar Alterações
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

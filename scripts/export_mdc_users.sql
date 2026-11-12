@@ -1,0 +1,34 @@
+-- ==============================================================================
+-- HAMOA RESORT RESIDENCIAL - EXPORTACAO DE USUARIOS E BIOMETRIA FACIAL
+-- Sistema MDC 4WEB Residence -> Painel de Vencimento Facial (vencimento.hamoa)
+-- REGRA DE FILTRO: 100% LIMPO - APENAS MORADORES E PRESTADORES ATIVOS
+--                  VISITANTES E USUARIOS COM BAIXA (PERMISSAOACESSO='N') EXCLUIDOS
+-- ==============================================================================
+SET NOCOUNT ON;
+
+SELECT 
+    CAST(u.ID_USUARIOS AS VARCHAR(20)) + '|' +
+    ISNULL(u.MATRICULA, '') + '|' +
+    ISNULL(u.CRACHA, '') + '|' +
+    REPLACE(REPLACE(REPLACE(ISNULL(u.NOMECOMPLETO, ''), '|', ' '), CHAR(10), ''), CHAR(13), '') + '|' +
+    ISNULL(u.CPF, '') + '|' +
+    ISNULL(u.TIPO, '') + '|' +
+    ISNULL(CONVERT(VARCHAR(10), u.INICIOVALIDADE, 103), '') + '|' +
+    ISNULL(CONVERT(VARCHAR(10), u.FIMVALIDADE, 103), '') + '|' +
+    ISNULL(CONVERT(VARCHAR(10), u.DT_CAD_FACE, 103), '') + '|' +
+    ISNULL(u.PERMISSAOACESSO, 'S') + '|' +
+    ISNULL(u.CODAREAFONE1, '') + ISNULL(u.FONE1, '') + '|' +
+    REPLACE(REPLACE(REPLACE(ISNULL(e.RAZAOSOCIAL, ''), '|', ' '), CHAR(10), ''), CHAR(13), '') + '|' +
+    REPLACE(REPLACE(REPLACE(ISNULL(e.NOMEFANTASIA, ''), '|', ' '), CHAR(10), ''), CHAR(13), '') + '|' +
+    CAST(ISNULL(e.EhPRESTADORA, 0) AS VARCHAR(5)) + '|' +
+    REPLACE(REPLACE(REPLACE(ISNULL(cat.DESCRICAO, ''), '|', ' '), CHAR(10), ''), CHAR(13), '') + '|' +
+    REPLACE(REPLACE(REPLACE(ISNULL(u.cargo, ''), '|', ' '), CHAR(10), ''), CHAR(13), '') + '|' +
+    REPLACE(REPLACE(REPLACE(ISNULL(prop.NOMECOMPLETO, ISNULL(u.respNome, '')), '|', ' '), CHAR(10), ''), CHAR(13), '')
+FROM GERA_USUARIOS u WITH (NOLOCK)
+LEFT JOIN GERA_EMPRESAS e WITH (NOLOCK) ON u.ID_EMPRESA = e.ID_EMPRESA
+LEFT JOIN GERA_CLASSIFICACOES cat WITH (NOLOCK) ON u.ID_CLASSIFICACAO = cat.ID_CLASSIFICACAO
+LEFT JOIN GERA_USUARIOS prop WITH (NOLOCK) ON u.ID_PROPRIETARIO = prop.ID_USUARIOS
+WHERE (u.PERMISSAOACESSO = 'S' OR u.PERMISSAOACESSO IS NULL)
+  AND u.TIPO <> 'V'
+  AND u.NOMECOMPLETO NOT LIKE 'VISIT:%'
+  AND (cat.DESCRICAO IS NULL OR (cat.DESCRICAO NOT LIKE '%VISIT%' AND cat.DESCRICAO NOT LIKE '%VISITANTE%'));

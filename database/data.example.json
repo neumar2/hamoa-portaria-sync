@@ -1,0 +1,194 @@
+{
+  "unidades": [
+    {
+      "id": "uni_01_01",
+      "quadra": "01",
+      "lote": "01",
+      "chavePrimaria": "QD 01 - LT 01",
+      "condominos": [
+        {
+          "nome": "Carlos Alberto da Silva",
+          "telefone": "(66) 99999-1001",
+          "email": "carlos.silva@exemplo.com"
+        }
+      ],
+      "observacoes": "Residência modelo",
+      "criadoEm": "2026-01-10T10:00:00.000Z"
+    },
+    {
+      "id": "uni_01_02",
+      "quadra": "01",
+      "lote": "02",
+      "chavePrimaria": "QD 01 - LT 02",
+      "condominos": [
+        {
+          "nome": "Mariana Oliveira Costa",
+          "telefone": "(66) 99999-1002",
+          "email": "mariana.costa@exemplo.com"
+        }
+      ],
+      "observacoes": "",
+      "criadoEm": "2026-01-10T10:00:00.000Z"
+    },
+    {
+      "id": "uni_02_05",
+      "quadra": "02",
+      "lote": "05",
+      "chavePrimaria": "QD 02 - LT 05",
+      "condominos": [
+        {
+          "nome": "Roberto Souza Mendes",
+          "telefone": "(66) 99999-1003",
+          "email": "roberto.mendes@exemplo.com"
+        }
+      ],
+      "observacoes": "",
+      "criadoEm": "2026-01-10T10:00:00.000Z"
+    },
+    {
+      "id": "uni_03_10",
+      "quadra": "03",
+      "lote": "10",
+      "chavePrimaria": "QD 03 - LT 10",
+      "condominos": [
+        {
+          "nome": "Juliana Ferreira Lima",
+          "telefone": "(66) 99999-1004",
+          "email": "juliana.lima@exemplo.com"
+        }
+      ],
+      "observacoes": "",
+      "criadoEm": "2026-01-10T10:00:00.000Z"
+    },
+    {
+      "id": "uni_04_12",
+      "quadra": "04",
+      "lote": "12",
+      "chavePrimaria": "QD 04 - LT 12",
+      "condominos": [
+        {
+          "nome": "Fernando Rocha",
+          "telefone": "(66) 99999-1005",
+          "email": "fernando.rocha@exemplo.com"
+        }
+      ],
+      "observacoes": "",
+      "criadoEm": "2026-01-10T10:00:00.000Z"
+    }
+  ],
+  "prestadores": [
+    {
+      "id": "pres_01",
+      "matricula": "00000001",
+      "cracha": "00000001",
+      "nome": "ANA PAULA SANTOS",
+      "nomeAbreviado": "ANA SANTOS",
+      "categoria": "Diarista",
+      "quadraLote": "QD 01 - LT 01",
+      "condominoResponsavel": "Carlos Alberto da Silva",
+      "vencimentoFacial": "20/12/2026",
+      "dtCadFace": "20/06/2026",
+      "diasSemana": "Segunda, Quarta e Sexta",
+      "observacoes": "Liberar acesso portaria de serviço",
+      "origem": "MDC 4WEB",
+      "status": "Ativo",
+      "criadoEm": "2026-01-10T10:00:00.000Z"
+    },
+    {
+      "id": "pres_02",
+      "matricula": "00000002",
+      "cracha": "00000002",
+      "nome": "MARCOS PAULO RIBEIRO",
+      "nomeAbreviado": "MARCOS RIBEIRO",
+      "categoria": "Piscineiro",
+      "quadraLote": "QD 01 - LT 02",
+      "condominoResponsavel": "Mariana Oliveira Costa",
+      "vencimentoFacial": "15/11/2026",
+      "dtCadFace": "15/05/2026",
+      "diasSemana": "Terça e Quinta",
+      "observacoes": "",
+      "origem": "MDC 4WEB",
+      "status": "Ativo",
+      "criadoEm": "2026-01-10T10:00:00.000Z"
+    },
+    {
+      "id": "pres_03",
+      "matricula": "00000003",
+      "cracha": "00000003",
+      "nome": "LUCAS SILVEIRA BATISTA",
+      "nomeAbreviado": "LUCAS SILVEIRA",
+      "categoria": "Prestador Geral / Obras",
+      "quadraLote": "QD 02 - LT 05",
+      "condominoResponsavel": "Roberto Souza Mendes",
+      "vencimentoFacial": "10/11/2026",
+      "dtCadFace": "10/05/2026",
+      "diasSemana": "DIÁRIO",
+      "observacoes": "Obra civil",
+      "origem": "MDC 4WEB",
+      "status": "Vencido",
+      "criadoEm": "2026-01-10T10:00:00.000Z"
+    },
+    {
+      "id": "pres_04",
+      "matricula": "00000004",
+      "cracha": "00000004",
+      "nome": "TATIANE RIBEIRO GOMES",
+      "nomeAbreviado": "TATIANE GOMES",
+      "categoria": "Babá",
+      "quadraLote": "QD 03 - LT 10",
+      "condominoResponsavel": "Juliana Ferreira Lima",
+      "vencimentoFacial": "05/01/2027",
+      "dtCadFace": "05/07/2026",
+      "diasSemana": "Segunda a Sexta",
+      "observacoes": "",
+      "origem": "MDC 4WEB",
+      "status": "Ativo",
+      "criadoEm": "2026-01-10T10:00:00.000Z"
+    },
+    {
+      "id": "pres_05",
+      "matricula": "00000005",
+      "cracha": "00000005",
+      "nome": "JOSE APARECIDO CARVALHO",
+      "nomeAbreviado": "JOSE APARECIDO",
+      "categoria": "Jardineiro",
+      "quadraLote": "QD 04 - LT 12",
+      "condominoResponsavel": "Fernando Rocha",
+      "vencimentoFacial": "13/11/2026",
+      "dtCadFace": "13/05/2026",
+      "diasSemana": "Sábado",
+      "observacoes": "",
+      "origem": "MDC 4WEB",
+      "status": "Ativo",
+      "criadoEm": "2026-01-10T10:00:00.000Z"
+    }
+  ],
+  "categorias": [
+    "Diarista",
+    "Piscineiro",
+    "Babá",
+    "Jardineiro",
+    "Motorista",
+    "Professor Particular",
+    "Pet Shop",
+    "Cuidador Pessoal",
+    "Assessora Pessoal",
+    "Cozinheira",
+    "Faz Tudo",
+    "Prestador Geral / Obras"
+  ],
+  "customColumns": [
+    { "id": "empresa", "nome": "Empresa Prestadora", "tipo": "text", "target": "prestador" },
+    { "id": "placa", "nome": "Placa do Veículo", "tipo": "text", "target": "prestador" }
+  ],
+  "obras": [],
+  "syncLogs": [
+    {
+      "tipo": "Exemplo de Carga",
+      "status": "Concluído",
+      "data": "2026-11-12T12:00:00.000Z",
+      "mensagem": "Banco de dados demonstrativo inicializado com sucesso."
+    }
+  ],
+  "notificationLogs": []
+}
