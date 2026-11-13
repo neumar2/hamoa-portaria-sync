@@ -18,6 +18,7 @@ database/sheets_professions.json
 database/*.bak
 database/*.tmp
 database/*.csv
+public/controle-profissoes.html
 
 # Backups e Logs
 logs/
