@@ -1435,11 +1435,11 @@ body {
 
 .results-list {
   overflow-y: auto;
-  max-height: 420px;
-  padding: 8px;
+  max-height: 540px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .search-result-item {
@@ -1458,6 +1458,222 @@ body {
   background: #f8fafc;
   border-color: #bfdbfe;
   box-shadow: var(--shadow-sm);
+}
+
+/* Card especial para Colaborador com Múltiplas Casas */
+.search-result-item.search-result-multi {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #ffffff;
+  border: 1px solid #bfdbfe;
+  border-left: 5px solid var(--primary-blue);
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.05);
+}
+
+.search-result-item.search-result-multi:hover {
+  background: #ffffff;
+  border-color: #93c5fd;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.1);
+}
+
+.search-multi-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+}
+
+.search-multi-top-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.badge-multi-casas-destaque {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid #bfdbfe;
+  letter-spacing: 0.2px;
+}
+
+.multi-avatar {
+  background: #eff6ff !important;
+  color: #1d4ed8 !important;
+  border-color: #bfdbfe !important;
+}
+
+.obs-destaque {
+  color: #b45309;
+  font-weight: 600;
+}
+
+.search-multi-casas-container {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.search-multi-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #475569;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 6px;
+}
+
+.search-multi-header-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.search-multi-header-left i {
+  color: var(--primary-blue);
+  font-size: 15px;
+}
+
+.search-multi-header-hint {
+  font-size: 11px;
+  color: #64748b;
+  margin-left: 4px;
+}
+
+.search-multi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+  gap: 8px;
+}
+
+.search-mini-casa {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 6px 10px;
+  transition: all 0.15s ease;
+}
+
+.search-mini-casa:hover {
+  border-color: #93c5fd;
+  background: #f0f7ff;
+}
+
+.mini-casa-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.lote-pill-mini {
+  font-size: 11px;
+  padding: 2px 6px;
+  flex-shrink: 0;
+}
+
+.mini-casa-morador {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mini-casa-morador i {
+  color: #64748b;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.mini-casa-dias {
+  font-size: 10px;
+  background: #f1f5f9;
+  color: #475569;
+  padding: 2px 5px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.mini-casa-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.btn-micro-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn-micro-action:hover {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: var(--primary-blue);
+}
+
+.btn-micro-whats {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #15803d;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn-micro-whats:hover {
+  background: #dcfce7;
+  border-color: #86efac;
+  color: #166534;
+}
+
+.btn-micro-whats i {
+  color: #16a34a;
+  font-size: 13px;
 }
 
 .col-prestador {

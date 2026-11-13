@@ -1471,13 +1471,18 @@ function aoDigitarBuscaGlobal(termo) {
 
   // 1. Filtra Prestadores / Funcionários
   const resultadosPrest = allPrestadores.filter(p => {
+    const atendeCasaMatch = p.unidadesAtendidas && p.unidadesAtendidas.some(u => 
+      (u.quadraLote && removerAcentos(u.quadraLote).includes(t)) ||
+      (u.condomino && removerAcentos(u.condomino).includes(t))
+    );
     return (
       (p.nome && removerAcentos(p.nome).includes(t)) ||
       (p.categoria && removerAcentos(p.categoria).includes(t)) ||
       (p.quadraLote && removerAcentos(p.quadraLote).includes(t)) ||
       (p.condominoResponsavel && removerAcentos(p.condominoResponsavel).includes(t)) ||
       (p.cpf && p.cpf.includes(t)) ||
-      (p.matricula && p.matricula.includes(t))
+      (p.matricula && p.matricula.includes(t)) ||
+      atendeCasaMatch
     );
   });
 
@@ -1530,15 +1535,89 @@ function aoDigitarBuscaGlobal(termo) {
       }
     }
 
+    const unidades = (Array.isArray(p.unidadesAtendidas) && p.unidadesAtendidas.length > 0)
+      ? p.unidadesAtendidas
+      : (p.quadraLote ? [{ quadraLote: p.quadraLote, condomino: p.condominoResponsavel, diasSemana: p.diasSemana, vencimentoFacial: p.vencimentoFacial, observacoes: p.observacoes }] : []);
+    const qtdCasas = unidades.length;
+
+    // Se o colaborador atende múltiplas residências (ex: Roberto Barbosa atende 8 casas)
+    if (qtdCasas > 1) {
+      const casasHtml = unidades.map(c => {
+        const moradorMini = formatarMoradorCompacto(c.condomino);
+        const qdEsc = (c.quadraLote || '').replace(/'/g, "\\'");
+        return `
+          <div class="search-mini-casa">
+            <div class="mini-casa-left">
+              <span class="lote-pill lote-pill-mini">${c.quadraLote}</span>
+              <span class="mini-casa-morador" title="${c.condomino || ''}">
+                <i class="ph-bold ph-user"></i> ${moradorMini}
+              </span>
+              ${c.diasSemana && !c.diasSemana.toUpperCase().includes('VARIA') ? `<span class="mini-casa-dias">${c.diasSemana}</span>` : ''}
+            </div>
+            <div class="mini-casa-actions">
+              <button type="button" class="btn-micro-action" onclick="irParaResidenciaDoPrestador('${qdEsc}')" title="Abrir ficha da ${c.quadraLote}">
+                <i class="ph-bold ph-house-line"></i> Ver Casa
+              </button>
+              <button type="button" class="btn-micro-whats" onclick="fecharDropdownBuscaGlobal(); abrirWhatsAppModalParaPrestador('${p.id}', '${qdEsc}')" title="Notificar morador no WhatsApp">
+                <i class="ph-bold ph-whatsapp-logo"></i> WhatsApp
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      return `
+        <div class="search-result-item search-result-multi">
+          <div class="search-multi-top">
+            <div class="col-prestador">
+              <div class="prestador-avatar-icon multi-avatar">
+                <i class="ph-bold ph-identification-card"></i>
+              </div>
+              <div class="prestador-texts">
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                  <strong class="prestador-nome">${p.nome}</strong>
+                  <span class="badge-multi-casas-destaque">
+                    <i class="ph-bold ph-buildings"></i> ${qtdCasas} Residências Vinculadas
+                  </span>
+                </div>
+                <span class="prestador-cargo">
+                  ${p.categoria || 'Prestador'} ${p.matricula ? `• Matrícula: ${p.matricula}` : ''}
+                  ${p.observacoes ? `• <span class="obs-destaque">Obs: ${p.observacoes}</span>` : ''}
+                </span>
+              </div>
+            </div>
+
+            <div class="search-multi-top-right">
+              <div class="col-vencimento">
+                <span class="tag-status ${tagStatus}" style="font-size: 11px; padding: 4px 10px;">${labelStatus}</span>
+              </div>
+              <div class="col-actions">
+                <button class="btn-table-action" onclick="abrirModalEditarPrestador('${p.id}')" title="Editar Colaborador / Vínculo">
+                  <i class="ph-bold ph-pencil-simple"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="search-multi-casas-container">
+            <div class="search-multi-header">
+              <div class="search-multi-header-left">
+                <i class="ph-bold ph-house-line"></i>
+                <span><strong>Residências com Acesso Autorizado (${qtdCasas}):</strong> <span class="search-multi-header-hint">Qualquer um destes condôminos pode autorizar ou renovar</span></span>
+              </div>
+            </div>
+            <div class="search-multi-grid">
+              ${casasHtml}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Caso prestador atenda apenas 1 residência (layout padrão limpo de 1 linha)
     const morador = formatarMoradorCompacto(p.condominoResponsavel);
     const qdLote = p.quadraLote || 'Sem lote definido';
-
-    const qtdCasas = (Array.isArray(p.unidadesAtendidas) && p.unidadesAtendidas.length > 0) ? p.unidadesAtendidas.length : (p.totalCasas || 1);
-    const multiCasasBadge = qtdCasas > 1
-      ? `<button class="badge-multi-casas" onclick="fecharDropdownBuscaGlobal(); abrirModalMultiCasas('${p.id}')" title="Prestador atende ${qtdCasas} casas no condomínio. Clique para ver todas.">
-          <i class="ph-bold ph-buildings"></i> ${qtdCasas} casas
-        </button>`
-      : '';
+    const qdLoteEsc = qdLote.replace(/'/g, "\\'");
 
     return `
       <div class="search-result-item">
@@ -1548,7 +1627,7 @@ function aoDigitarBuscaGlobal(termo) {
           </div>
           <div class="prestador-texts">
             <strong class="prestador-nome">${p.nome}</strong>
-            <span class="prestador-cargo">${p.categoria || 'Prestador'} ${p.matricula ? `• Matrícula: ${p.matricula}` : ''}</span>
+            <span class="prestador-cargo">${p.categoria || 'Prestador'} ${p.matricula ? `• Matrícula: ${p.matricula}` : ''} ${p.observacoes ? `• Obs: ${p.observacoes}` : ''}</span>
           </div>
         </div>
 
@@ -1557,18 +1636,15 @@ function aoDigitarBuscaGlobal(termo) {
         </div>
 
         <div class="col-residencia">
-          <div style="display: flex; align-items: center; gap: 6px;">
-            <span class="lote-pill">${qdLote}</span>
-            ${multiCasasBadge}
-          </div>
+          <span class="lote-pill">${qdLote}</span>
           <span class="morador-text" title="Morador responsável"><i class="ph-bold ph-user"></i> ${morador}</span>
         </div>
 
         <div class="col-actions">
-          <button class="btn-action-ver" onclick="irParaResidenciaDoPrestador('${qdLote}')" title="Abrir residência e funcionários">
+          <button class="btn-action-ver" onclick="irParaResidenciaDoPrestador('${qdLoteEsc}')" title="Abrir residência e funcionários">
             <i class="ph-bold ph-house-line"></i> Ver Casa
           </button>
-          <button class="btn-action-whats" onclick="abrirWhatsDoPrestador('${p.id}')" title="Notificar morador no WhatsApp">
+          <button class="btn-action-whats" onclick="fecharDropdownBuscaGlobal(); abrirWhatsAppModalParaPrestador('${p.id}', '${qdLoteEsc}')" title="Notificar morador no WhatsApp">
             <i class="ph-bold ph-whatsapp-logo" style="color: #16a34a;"></i> WhatsApp
           </button>
           <button class="btn-table-action" onclick="abrirModalEditarPrestador('${p.id}')" title="Editar Colaborador / Vínculo">
@@ -1582,6 +1658,7 @@ function aoDigitarBuscaGlobal(termo) {
   let htmlMoradores = resultadosMoradores.map(u => {
     const moradorNome = u.condominos && u.condominos.length > 0 ? u.condominos.map(c => c.nome).join(' / ') : 'Condômino';
     const totalPrest = u.totalPrestadores || (u.prestadores ? u.prestadores.length : 0);
+    const chaveEsc = (u.chavePrimaria || '').replace(/'/g, "\\'");
 
     return `
       <div class="search-result-item" style="border-left: 3px solid var(--primary-blue);">
@@ -1607,10 +1684,10 @@ function aoDigitarBuscaGlobal(termo) {
         </div>
 
         <div class="col-actions">
-          <button class="btn-action-ver" onclick="irParaResidenciaDoPrestador('${u.chavePrimaria}')" title="Abrir ficha da residência">
+          <button class="btn-action-ver" onclick="irParaResidenciaDoPrestador('${chaveEsc}')" title="Abrir ficha da residência">
             <i class="ph-bold ph-house-line"></i> Ver Casa
           </button>
-          <button class="btn-action-whats" onclick="selecionarResidenciaPorChave('${u.chavePrimaria}'); abrirWhatsAppModal();" title="Enviar WhatsApp para o Morador">
+          <button class="btn-action-whats" onclick="fecharDropdownBuscaGlobal(); selecionarResidenciaPorChave('${chaveEsc}'); abrirWhatsAppModal();" title="Enviar WhatsApp para o Morador">
             <i class="ph-bold ph-whatsapp-logo" style="color: #16a34a;"></i> WhatsApp
           </button>
         </div>
