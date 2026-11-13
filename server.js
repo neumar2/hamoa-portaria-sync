@@ -161,6 +161,172 @@ app.post('/api/unidades', (req, res) => {
   res.json(nova);
 });
 
+// Vincular Colaborador a uma Residência (Existente ou Novo sem Facial no MDC)
+app.post('/api/unidades/:chave/vincular', (req, res) => {
+  const chave = decodeURIComponent(req.params.chave).trim();
+  const { prestadorId, nome, categoria, diasSemana, vencimentoFacial, observacoes, condomino } = req.body;
+
+  let prestador = null;
+
+  if (prestadorId) {
+    // 1. Vincular colaborador já existente
+    prestador = db.getPrestadorById(prestadorId);
+    if (!prestador) {
+      return res.status(404).json({ error: 'Colaborador não encontrado' });
+    }
+
+    if (!Array.isArray(prestador.unidadesAtendidas)) {
+      prestador.unidadesAtendidas = [];
+      if (prestador.quadraLote && prestador.quadraLote.startsWith('QD ')) {
+        prestador.unidadesAtendidas.push({
+          quadraLote: prestador.quadraLote,
+          quadraLoteOriginal: prestador.quadraLote,
+          condomino: prestador.condominoResponsavel || '',
+          diasSemana: prestador.diasSemana || 'DIÁRIO',
+          vencimentoFacial: prestador.vencimentoFacial || 'Libera pelo App',
+          observacoes: prestador.observacoes || ''
+        });
+      }
+    }
+
+    const jaVinculado = prestador.unidadesAtendidas.some(u => u.quadraLote && u.quadraLote.toLowerCase() === chave.toLowerCase());
+    if (!jaVinculado) {
+      prestador.unidadesAtendidas.push({
+        quadraLote: chave,
+        quadraLoteOriginal: chave,
+        condomino: condomino || prestador.condominoResponsavel || '',
+        diasSemana: diasSemana || 'DIÁRIO',
+        vencimentoFacial: vencimentoFacial || prestador.vencimentoFacial || 'Libera pelo App',
+        observacoes: observacoes || ''
+      });
+    }
+
+    prestador.totalCasas = prestador.unidadesAtendidas.length;
+    if (!prestador.quadraLote || prestador.quadraLote === 'SEM LOTE') {
+      prestador.quadraLote = chave;
+      prestador.condominoResponsavel = condomino || prestador.condominoResponsavel;
+    }
+    prestador.editadoManualmente = true;
+    if (!prestador.historico) prestador.historico = [];
+    prestador.historico.unshift({
+      data: new Date().toISOString(),
+      descricao: `Vinculado manualmente à residência ${chave}`
+    });
+    prestador.atualizadoEm = new Date().toISOString();
+    db.savePrestador(prestador);
+
+  } else if (nome && nome.trim()) {
+    // 2. Cadastrar novo colaborador (sem facial no sistema)
+    const novoNome = nome.trim();
+    const cat = categoria ? categoria.trim() : 'Prestador';
+    
+    // Adiciona categoria ao catálogo se não existir
+    db.addCategoria(cat);
+
+    prestador = {
+      id: 'pres_man_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+      nome: novoNome,
+      matricula: '',
+      cpf: '',
+      cracha: '',
+      categoria: cat,
+      funcaoCargo: cat,
+      quadraLote: chave,
+      condominoResponsavel: condomino || '',
+      unidadesAtendidas: [{
+        quadraLote: chave,
+        quadraLoteOriginal: chave,
+        condomino: condomino || '',
+        diasSemana: diasSemana || 'DIÁRIO',
+        vencimentoFacial: vencimentoFacial || 'Libera pelo App',
+        observacoes: observacoes || ''
+      }],
+      totalCasas: 1,
+      telefoneResponsavel: '',
+      vencimentoFacial: vencimentoFacial || 'Libera pelo App',
+      diasSemana: diasSemana || 'DIÁRIO',
+      observacoes: observacoes || '',
+      origem: 'Manual (Portaria)',
+      status: 'Ativo',
+      editadoManualmente: true,
+      historico: [{
+        data: new Date().toISOString(),
+        descricao: `Cadastrado e vinculado manualmente à residência ${chave}`
+      }],
+      criadoEm: new Date().toISOString(),
+      atualizadoEm: new Date().toISOString()
+    };
+    db.savePrestador(prestador);
+  } else {
+    return res.status(400).json({ error: 'Informe um prestadorId ou o Nome do novo colaborador' });
+  }
+
+  // Garante que a unidade exista no cadastro
+  let unidade = db.getUnidadeByChave(chave);
+  if (!unidade && chave.startsWith('QD ')) {
+    const parts = chave.split('-');
+    const qNum = parts[0] ? parts[0].replace(/\D/g, '').padStart(2, '0') : '00';
+    const lNum = parts[1] ? parts[1].replace(/\D/g, '').padStart(2, '0') : '00';
+    unidade = db.saveUnidade({
+      id: `uni_${qNum}_${lNum}`,
+      quadra: qNum,
+      lote: lNum,
+      chavePrimaria: chave,
+      condominos: condomino ? [{ nome: condomino, tipo: 'Titular' }] : [],
+      observacoes: ''
+    });
+  }
+
+  res.json({ success: true, prestador, mensagem: `Colaborador vinculado à residência ${chave} com sucesso!` });
+});
+
+// Desvincular Colaborador de uma Residência
+app.post('/api/unidades/:chave/desvincular', (req, res) => {
+  const chave = decodeURIComponent(req.params.chave).trim();
+  const { prestadorId } = req.body;
+
+  if (!prestadorId) {
+    return res.status(400).json({ error: 'prestadorId é obrigatório' });
+  }
+
+  const prestador = db.getPrestadorById(prestadorId);
+  if (!prestador) {
+    return res.status(404).json({ error: 'Colaborador não encontrado' });
+  }
+
+  // Remove da lista de unidadesAtendidas
+  if (Array.isArray(prestador.unidadesAtendidas)) {
+    prestador.unidadesAtendidas = prestador.unidadesAtendidas.filter(
+      u => u.quadraLote && u.quadraLote.toLowerCase() !== chave.toLowerCase()
+    );
+  } else {
+    prestador.unidadesAtendidas = [];
+  }
+
+  prestador.totalCasas = prestador.unidadesAtendidas.length;
+
+  // Se o lote principal era este, atualiza para outra casa restante ou 'SEM LOTE'
+  if (prestador.quadraLote && prestador.quadraLote.toLowerCase() === chave.toLowerCase()) {
+    if (prestador.unidadesAtendidas.length > 0) {
+      prestador.quadraLote = prestador.unidadesAtendidas[0].quadraLote;
+      prestador.condominoResponsavel = prestador.unidadesAtendidas[0].condomino;
+    } else {
+      prestador.quadraLote = 'SEM LOTE';
+    }
+  }
+
+  prestador.editadoManualmente = true;
+  if (!prestador.historico) prestador.historico = [];
+  prestador.historico.unshift({
+    data: new Date().toISOString(),
+    descricao: `Desvinculado da residência ${chave}`
+  });
+  prestador.atualizadoEm = new Date().toISOString();
+  db.savePrestador(prestador);
+
+  res.json({ success: true, prestador, mensagem: `Colaborador desvinculado de ${chave} com sucesso!` });
+});
+
 // ==================== PRESTADORES DE SERVIÇOS ====================
 
 app.get('/api/prestadores', (req, res) => {

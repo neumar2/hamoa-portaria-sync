@@ -649,9 +649,14 @@ function selecionarResidenciaPorChave(chave, atualizarSelects = true) {
           <td><strong style="color: #0f172a; font-size: 13px;">${p.vencimentoFacial || 'Sem data cadastrada'}</strong></td>
           <td><span class="tag-status ${tagClass}">${tagLabel}</span></td>
           <td style="text-align: right;">
-            <button class="btn-table-action" onclick="abrirModalEditarPrestador('${p.id}')" title="Editar Colaborador / Vínculo">
-              <i class="ph-bold ph-pencil-simple" style="color: var(--primary-blue);"></i> Editar / Vínculo
-            </button>
+            <div style="display: flex; gap: 6px; justify-content: flex-end;">
+              <button class="btn-table-action" onclick="abrirModalEditarPrestador('${p.id}')" title="Editar Colaborador / Vínculo">
+                <i class="ph-bold ph-pencil-simple" style="color: var(--primary-blue);"></i> Editar
+              </button>
+              <button class="btn-table-action btn-danger-action" onclick="desvincularPrestadorDaCasa('${p.id}', '${p.nome.replace(/'/g, "\\'")}')" title="Desvincular deste lote">
+                <i class="ph-bold ph-link-break"></i> Desvincular
+              </button>
+            </div>
           </td>
         </tr>
       `;
@@ -1447,6 +1452,305 @@ async function salvarEdicaoPrestador() {
   } finally {
     btn.innerHTML = btnTextoOriginal;
     btn.disabled = false;
+  }
+}
+
+// ============================================================
+// MODAL DE VINCULAÇÃO E DESVINCULAÇÃO DE COLABORADOR (CASA/LOTE)
+// ============================================================
+
+let tabVinculoAtual = 'existente';
+
+function abrirModalVincularColaborador() {
+  if (!unidadeAtual || !unidadeAtual.chavePrimaria) {
+    showToast('⚠️ Selecione uma residência primeiro.');
+    return;
+  }
+
+  const chave = unidadeAtual.chavePrimaria;
+  document.getElementById('modalVincularTitulo').textContent = `Vincular Colaborador — ${chave}`;
+  document.getElementById('modalVincularSubtitulo').textContent = `Morador(es): ${moradorWhatsAtual || 'Responsável'}`;
+
+  // Reset tab
+  alternarTabVinculo('existente');
+
+  // Popular Select de Existentes
+  document.getElementById('inputFiltroColabExistente').value = '';
+  popularSelectColabExistente('');
+
+  // Popular Categorias do Novo
+  popularCategoriasDropdownNovo();
+
+  // Reset Novo
+  document.getElementById('novoColabNome').value = '';
+  document.getElementById('chkSemFacial').checked = true;
+  aoAlternarSemFacial(true);
+  document.getElementById('novoColabObs').value = '';
+
+  document.getElementById('modalVincularColaborador').classList.add('open');
+}
+
+function fecharModalVincular() {
+  const modal = document.getElementById('modalVincularColaborador');
+  if (modal) modal.classList.remove('open');
+}
+
+function alternarTabVinculo(tab) {
+  tabVinculoAtual = tab;
+  const btnEx = document.getElementById('tabBtnExistente');
+  const btnNov = document.getElementById('tabBtnNovo');
+  const cEx = document.getElementById('tabConteudoExistente');
+  const cNov = document.getElementById('tabConteudoNovo');
+
+  if (tab === 'existente') {
+    btnEx.classList.add('active');
+    btnNov.classList.remove('active');
+    cEx.style.display = 'block';
+    cNov.style.display = 'none';
+  } else {
+    btnNov.classList.add('active');
+    btnEx.classList.remove('active');
+    cNov.style.display = 'block';
+    cEx.style.display = 'none';
+  }
+}
+
+function popularSelectColabExistente(filtro = '') {
+  const sel = document.getElementById('selectColaboradorExistente');
+  if (!sel) return;
+  sel.innerHTML = '';
+
+  const termo = removerAcentos(filtro || '').toLowerCase().trim();
+  const chaveAtual = (unidadeAtual && unidadeAtual.chavePrimaria) ? unidadeAtual.chavePrimaria.toLowerCase() : '';
+
+  const listaFiltrada = allPrestadores.filter(p => {
+    if (!p.nome) return false;
+    if (termo && !removerAcentos(p.nome).toLowerCase().includes(termo) && !(p.categoria && removerAcentos(p.categoria).toLowerCase().includes(termo))) {
+      return false;
+    }
+    return true;
+  }).sort((a, b) => a.nome.localeCompare(b.nome));
+
+  if (listaFiltrada.length === 0) {
+    const opt = document.createElement('option');
+    opt.value = '';
+    opt.disabled = true;
+    opt.textContent = 'Nenhum colaborador encontrado com este nome';
+    sel.appendChild(opt);
+    return;
+  }
+
+  listaFiltrada.forEach(p => {
+    const jaVinculado = (p.quadraLote && p.quadraLote.toLowerCase() === chaveAtual) ||
+      (Array.isArray(p.unidadesAtendidas) && p.unidadesAtendidas.some(u => u.quadraLote && u.quadraLote.toLowerCase() === chaveAtual));
+
+    const opt = document.createElement('option');
+    opt.value = p.id;
+    const cat = p.categoria ? ` (${p.categoria})` : '';
+    const tagJa = jaVinculado ? ' ✅ Já vinculado a esta casa' : '';
+    opt.textContent = `${p.nome}${cat}${tagJa}`;
+    if (jaVinculado) {
+      opt.style.color = '#15803d';
+      opt.style.fontWeight = '600';
+    }
+    sel.appendChild(opt);
+  });
+
+  if (sel.options.length > 0 && !sel.options[0].disabled) {
+    sel.selectedIndex = 0;
+    aoSelecionarColabExistente(sel.value);
+  }
+}
+
+function aoFiltrarColabExistente(valor) {
+  popularSelectColabExistente(valor);
+}
+
+function aoSelecionarColabExistente(id) {
+  const p = allPrestadores.find(item => item.id === id);
+  if (!p) return;
+  const selDias = document.getElementById('vinculoExistenteDias');
+  if (selDias && p.diasSemana) {
+    selDias.value = p.diasSemana;
+  }
+}
+
+function popularCategoriasDropdownNovo() {
+  const selCat = document.getElementById('novoColabCategoria');
+  if (!selCat) return;
+
+  const cats = [
+    'Diarista',
+    'Doméstica',
+    'Babá',
+    'Jardineiro',
+    'Piscineiro',
+    'Motorista',
+    'Professor Particular',
+    'Pet Shop',
+    'Cuidador Pessoal',
+    'Assessora Pessoal',
+    'Cozinheira',
+    'Faz Tudo',
+    'Pedreiro / Obra',
+    'Eletricista',
+    'Prestador de Serviço'
+  ];
+
+  const setCats = new Set(cats);
+  if (Array.isArray(allPrestadores)) {
+    allPrestadores.forEach(p => {
+      if (p.categoria && p.categoria.trim().length > 2) setCats.add(p.categoria.trim());
+    });
+  }
+
+  selCat.innerHTML = '';
+  Array.from(setCats).sort((a, b) => a.localeCompare(b)).forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c;
+    opt.textContent = c;
+    selCat.appendChild(opt);
+  });
+}
+
+function aoAlternarSemFacial(checked) {
+  const inp = document.getElementById('novoColabVencimento');
+  if (!inp) return;
+  if (checked) {
+    inp.disabled = true;
+    inp.value = '';
+    inp.placeholder = 'Libera pelo App';
+    inp.style.background = '#f1f5f9';
+  } else {
+    inp.disabled = false;
+    inp.placeholder = 'DD/MM/AAAA';
+    inp.style.background = '#ffffff';
+    inp.focus();
+  }
+}
+
+async function confirmarVinculoColaborador() {
+  if (!unidadeAtual || !unidadeAtual.chavePrimaria) {
+    showToast('⚠️ Nenhuma residência selecionada.');
+    return;
+  }
+
+  const chave = unidadeAtual.chavePrimaria;
+  const btn = document.getElementById('btnConfirmarVinculo');
+  const btnOriginal = btn.innerHTML;
+  btn.innerHTML = `<i class="ph-bold ph-spinner ph-spin"></i> Vinculando...`;
+  btn.disabled = true;
+
+  try {
+    let payload = {};
+
+    if (tabVinculoAtual === 'existente') {
+      const selColab = document.getElementById('selectColaboradorExistente');
+      const prestadorId = selColab.value;
+      if (!prestadorId) {
+        showToast('⚠️ Selecione um colaborador na lista.');
+        btn.innerHTML = btnOriginal;
+        btn.disabled = false;
+        return;
+      }
+      payload = {
+        prestadorId,
+        diasSemana: document.getElementById('vinculoExistenteDias').value,
+        observacoes: document.getElementById('vinculoExistenteObs').value.trim(),
+        condomino: moradorWhatsAtual || ''
+      };
+    } else {
+      const nome = document.getElementById('novoColabNome').value.trim();
+      if (!nome || nome.length < 3) {
+        showToast('⚠️ Informe o nome completo do novo colaborador.');
+        btn.innerHTML = btnOriginal;
+        btn.disabled = false;
+        return;
+      }
+      const categoria = document.getElementById('novoColabCategoria').value;
+      const diasSemana = document.getElementById('novoColabDias').value;
+      const chkSemFacial = document.getElementById('chkSemFacial').checked;
+      let vencimento = chkSemFacial ? 'Libera pelo App' : document.getElementById('novoColabVencimento').value.trim();
+      if (!chkSemFacial && vencimento) {
+        const m = vencimento.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+        if (!m) {
+          showToast('⚠️ Data de vencimento inválida! Use DD/MM/AAAA.');
+          btn.innerHTML = btnOriginal;
+          btn.disabled = false;
+          return;
+        }
+      }
+      const observacoes = document.getElementById('novoColabObs').value.trim();
+
+      payload = {
+        nome,
+        categoria,
+        diasSemana,
+        vencimentoFacial: vencimento,
+        observacoes,
+        condomino: moradorWhatsAtual || ''
+      };
+    }
+
+    const res = await fetch(`/api/unidades/${encodeURIComponent(chave)}/vincular`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const errData = await res.json();
+      throw new Error(errData.error || 'Erro ao vincular');
+    }
+
+    const resData = await res.json();
+    showToast(`✅ ${resData.mensagem || 'Colaborador vinculado com sucesso!'}`);
+    fecharModalVincular();
+
+    await carregarDadosIniciais();
+    renderizarGradeCalendario();
+    if (dataSelecionadaStr) renderizarAgendaDoDia(dataSelecionadaStr);
+    selecionarResidenciaPorChave(chave, false);
+
+  } catch (err) {
+    console.error('Erro ao vincular colaborador:', err);
+    showToast(`❌ Erro: ${err.message}`);
+  } finally {
+    btn.innerHTML = btnOriginal;
+    btn.disabled = false;
+  }
+}
+
+async function desvincularPrestadorDaCasa(prestadorId, prestadorNome) {
+  if (!unidadeAtual || !unidadeAtual.chavePrimaria) return;
+  const chave = unidadeAtual.chavePrimaria;
+
+  const confirmar = confirm(`Deseja realmente remover o vínculo de "${prestadorNome}" com a residência ${chave}?\n\nO colaborador não terá mais autorização para este lote.`);
+  if (!confirmar) return;
+
+  try {
+    const res = await fetch(`/api/unidades/${encodeURIComponent(chave)}/desvincular`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prestadorId })
+    });
+
+    if (!res.ok) {
+      const errData = await res.json();
+      throw new Error(errData.error || 'Erro ao desvincular');
+    }
+
+    const data = await res.json();
+    showToast(`✅ ${data.mensagem || 'Vínculo removido com sucesso!'}`);
+
+    await carregarDadosIniciais();
+    renderizarGradeCalendario();
+    if (dataSelecionadaStr) renderizarAgendaDoDia(dataSelecionadaStr);
+    selecionarResidenciaPorChave(chave, false);
+
+  } catch (err) {
+    console.error('Erro ao desvincular prestador:', err);
+    showToast(`❌ Erro: ${err.message}`);
   }
 }
 

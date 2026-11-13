@@ -420,9 +420,21 @@ async function executarSincronizacao(opcoes = {}) {
     const observacaoPreservada = (existing && existing.observacoes && existing.observacoes !== '-') ? 
                                  existing.observacoes : (sheetMatch ? sheetMatch.observacoes : '');
 
-    let unidadesAtendidas = (sheetMatch && Array.isArray(sheetMatch.unidadesAtendidas) && sheetMatch.unidadesAtendidas.length > 0)
-      ? sheetMatch.unidadesAtendidas
-      : (existing && Array.isArray(existing.unidadesAtendidas) && existing.unidadesAtendidas.length > 0 ? existing.unidadesAtendidas : []);
+    let unidadesAtendidas = [];
+    if (isManual && existing && Array.isArray(existing.unidadesAtendidas)) {
+      unidadesAtendidas = existing.unidadesAtendidas;
+    } else if (sheetMatch && Array.isArray(sheetMatch.unidadesAtendidas) && sheetMatch.unidadesAtendidas.length > 0) {
+      unidadesAtendidas = [...sheetMatch.unidadesAtendidas];
+      if (existing && Array.isArray(existing.unidadesAtendidas)) {
+        existing.unidadesAtendidas.forEach(eu => {
+          if (!unidadesAtendidas.some(u => u.quadraLote && u.quadraLote.toUpperCase() === eu.quadraLote.toUpperCase())) {
+            unidadesAtendidas.push(eu);
+          }
+        });
+      }
+    } else if (existing && Array.isArray(existing.unidadesAtendidas) && existing.unidadesAtendidas.length > 0) {
+      unidadesAtendidas = existing.unidadesAtendidas;
+    }
 
     if (unidadesAtendidas.length === 0 && setorOuLote.startsWith('QD ')) {
       unidadesAtendidas = [{
@@ -519,9 +531,21 @@ async function executarSincronizacao(opcoes = {}) {
       const respFormatado = extrairTitularesDeduplicados(respFinal, 2) || 'Condômino da Unidade';
       const diasFinal = isManual ? existing.diasSemana : (s.diasSemana || 'DIÁRIO');
 
-      let unidadesAtendidas = (s.unidadesAtendidas && Array.isArray(s.unidadesAtendidas) && s.unidadesAtendidas.length > 0)
-        ? s.unidadesAtendidas
-        : (existing && Array.isArray(existing.unidadesAtendidas) && existing.unidadesAtendidas.length > 0 ? existing.unidadesAtendidas : []);
+      let unidadesAtendidas = [];
+      if (isManual && existing && Array.isArray(existing.unidadesAtendidas)) {
+        unidadesAtendidas = existing.unidadesAtendidas;
+      } else if (s.unidadesAtendidas && Array.isArray(s.unidadesAtendidas) && s.unidadesAtendidas.length > 0) {
+        unidadesAtendidas = [...s.unidadesAtendidas];
+        if (existing && Array.isArray(existing.unidadesAtendidas)) {
+          existing.unidadesAtendidas.forEach(eu => {
+            if (!unidadesAtendidas.some(u => u.quadraLote && u.quadraLote.toUpperCase() === eu.quadraLote.toUpperCase())) {
+              unidadesAtendidas.push(eu);
+            }
+          });
+        }
+      } else if (existing && Array.isArray(existing.unidadesAtendidas) && existing.unidadesAtendidas.length > 0) {
+        unidadesAtendidas = existing.unidadesAtendidas;
+      }
 
       if (unidadesAtendidas.length === 0 && qdFinal.startsWith('QD ')) {
         unidadesAtendidas = [{

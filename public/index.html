@@ -263,7 +263,12 @@
               <h3>Funcionários Vinculados a Este Morador</h3>
               <span class="subtext">Apenas os funcionários autorizados para esta residência específica</span>
             </div>
-            <span class="count-badge" id="resumoTotalColabs">0 funcionários</span>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span class="count-badge" id="resumoTotalColabs">0 funcionários</span>
+              <button class="btn-adicionar-vinculo" onclick="abrirModalVincularColaborador()" title="Vincular ou cadastrar colaborador para esta residência">
+                <i class="ph-bold ph-user-plus"></i> Vincular Colaborador
+              </button>
+            </div>
           </div>
 
           <table class="simple-table">
@@ -623,6 +628,119 @@
           <button class="btn-cancel" onclick="fecharModalEditar()">Cancelar</button>
           <button class="btn-primary-action" id="btnSalvarEdicao" onclick="salvarEdicaoPrestador()">
             <i class="ph-bold ph-floppy-disk"></i> Salvar Alterações
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE VINCULAR COLABORADOR À RESIDÊNCIA (NOVO OU EXISTENTE) -->
+  <div class="modal-overlay" id="modalVincularColaborador">
+    <div class="modal-box modal-medium">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <i class="ph-bold ph-user-plus" style="color: var(--primary-blue); font-size: 24px;"></i>
+          <div>
+            <h3 id="modalVincularTitulo">Vincular Colaborador à Residência</h3>
+            <span class="modal-subtitle" id="modalVincularSubtitulo">Adicione um colaborador existente ou cadastre um novo</span>
+          </div>
+        </div>
+        <button class="close-x" onclick="fecharModalVincular()"><i class="ph-bold ph-x"></i></button>
+      </div>
+
+      <!-- TABS DE ESCOLHA: EXISTENTE OU NOVO -->
+      <div class="modal-tab-header">
+        <button type="button" class="modal-tab-btn active" id="tabBtnExistente" onclick="alternarTabVinculo('existente')">
+          <i class="ph-bold ph-magnifying-glass"></i> Colaborador Já Cadastrado
+        </button>
+        <button type="button" class="modal-tab-btn" id="tabBtnNovo" onclick="alternarTabVinculo('novo')">
+          <i class="ph-bold ph-user-circle-plus"></i> Novo Colaborador (Sem Facial no MDC)
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <!-- CONTEÚDO TAB 1: EXISTENTE -->
+        <div id="tabConteudoExistente">
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label for="inputFiltroColabExistente"><i class="ph-bold ph-user"></i> Localizar Colaborador no Sistema:</label>
+            <input type="text" id="inputFiltroColabExistente" class="input-text-clean" placeholder="Digite para filtrar por nome..." oninput="aoFiltrarColabExistente(this.value)" style="margin-bottom: 8px;">
+            <select id="selectColaboradorExistente" class="select-clean" size="5" style="height: 150px; border-radius: 6px;" onchange="aoSelecionarColabExistente(this.value)">
+              <!-- Carregado dinamicamente com todos os colaboradores -->
+            </select>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label for="vinculoExistenteDias"><i class="ph-bold ph-calendar-check"></i> Dias de Acesso Nesta Casa:</label>
+              <select id="vinculoExistenteDias" class="select-clean">
+                <option value="DIÁRIO">DIÁRIO (Segunda a Domingo)</option>
+                <option value="SEGUNDA A SEXTA">SEGUNDA A SEXTA</option>
+                <option value="SEGUNDA A SÁBADO">SEGUNDA A SÁBADO</option>
+                <option value="SEGUNDA, QUARTA E SEXTA">SEGUNDA, QUARTA E SEXTA</option>
+                <option value="TERÇA E QUINTA">TERÇA E QUINTA</option>
+                <option value="FINAIS DE SEMANA">FINAIS DE SEMANA</option>
+                <option value="EVENTUAL / AVISO">EVENTUAL / SOB AVISO</option>
+                <option value="VARIÁVEL">VARIÁVEL</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="vinculoExistenteObs"><i class="ph-bold ph-notepad"></i> Observação para Esta Casa:</label>
+              <input type="text" id="vinculoExistenteObs" class="input-text-clean" placeholder="Ex: Autorizado pelo morador; libera pelo app">
+            </div>
+          </div>
+        </div>
+
+        <!-- CONTEÚDO TAB 2: NOVO (SEM FACIAL) -->
+        <div id="tabConteudoNovo" style="display: none;">
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label for="novoColabNome"><i class="ph-bold ph-identification-card"></i> Nome Completo do Colaborador *:</label>
+            <input type="text" id="novoColabNome" class="input-text-clean" placeholder="Ex: Maria de Souza, José da Silva...">
+          </div>
+
+          <div class="form-grid-2" style="margin-bottom: 12px;">
+            <div class="form-group">
+              <label for="novoColabCategoria"><i class="ph-bold ph-briefcase"></i> Função / Cargo *:</label>
+              <select id="novoColabCategoria" class="select-clean">
+                <!-- Carregado com o catálogo de categorias -->
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="novoColabDias"><i class="ph-bold ph-calendar-check"></i> Dias de Acesso:</label>
+              <select id="novoColabDias" class="select-clean">
+                <option value="DIÁRIO">DIÁRIO (Segunda a Domingo)</option>
+                <option value="SEGUNDA A SEXTA">SEGUNDA A SEXTA</option>
+                <option value="SEGUNDA A SÁBADO">SEGUNDA A SÁBADO</option>
+                <option value="SEGUNDA, QUARTA E SEXTA">SEGUNDA, QUARTA E SEXTA</option>
+                <option value="TERÇA E QUINTA">TERÇA E QUINTA</option>
+                <option value="FINAIS DE SEMANA">FINAIS DE SEMANA</option>
+                <option value="EVENTUAL / AVISO">EVENTUAL / SOB AVISO</option>
+                <option value="VARIÁVEL">VARIÁVEL</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-grid-2" style="margin-bottom: 12px;">
+            <div class="form-group">
+              <label for="novoColabVencimento"><i class="ph-bold ph-clock-countdown"></i> Vencimento Facial (DD/MM/AAAA):</label>
+              <input type="text" id="novoColabVencimento" class="input-text-clean" placeholder="Libera pelo App" disabled style="background: #f1f5f9;">
+              <div style="margin-top: 6px;">
+                <label style="font-size: 12px; color: #475569; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                  <input type="checkbox" id="chkSemFacial" checked onchange="aoAlternarSemFacial(this.checked)">
+                  Sem facial no MDC (Acesso Liberado pelo App)
+                </label>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="novoColabObs"><i class="ph-bold ph-notepad"></i> Observações da Portaria:</label>
+              <input type="text" id="novoColabObs" class="input-text-clean" placeholder="Ex: Chave na portaria; aguardando foto facial">
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-buttons" style="margin-top: 22px;">
+          <button class="btn-cancel" onclick="fecharModalVincular()">Cancelar</button>
+          <button class="btn-primary-action" id="btnConfirmarVinculo" onclick="confirmarVinculoColaborador()">
+            <i class="ph-bold ph-check-circle"></i> Confirmar Vínculo
           </button>
         </div>
       </div>
