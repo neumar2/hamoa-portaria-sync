@@ -19,6 +19,24 @@ function norm(s) {
     .trim();
 }
 
+// Extrai estritamente o nome oficial/exato, removendo apelidos ou notas em parênteses
+function extrairNomeExato(nomeOriginal) {
+  if (!nomeOriginal) return '';
+  let s = String(nomeOriginal).replace(/[\r\n\t]+/g, ' ').replace(/\s+/g, ' ').trim();
+  const matchParenteses = s.match(/^(.*?)\((.*?)\)$/);
+  if (matchParenteses) {
+    const antes = matchParenteses[1].trim();
+    const dentro = matchParenteses[2].trim();
+    // Se o que está dentro parece ser o nome completo real (ex: "Chicão (FRANCISCO OLIVEIRA PINTO)")
+    if (dentro.split(' ').length > antes.split(' ').length || (dentro === dentro.toUpperCase() && dentro.length > antes.length)) {
+      return dentro.replace(/\s+/g, ' ').trim();
+    }
+    // Caso padrão: apelido/observação entre parênteses no final (ex: "ANTONIO MANOEL DA SILVA (MANUEL - TIO)")
+    return antes.replace(/\s+/g, ' ').trim();
+  }
+  return s;
+}
+
 const mdcMap = new Map();
 mdcLines.forEach(line => {
   const parts = line.split('|');
@@ -44,7 +62,8 @@ let totalCompativel = 0;
 
 const colaboradores = Object.values(sheets).map(s => {
   totalGeral++;
-  const m = mdcMap.get(norm(s.nome));
+  const nomeExato = extrairNomeExato(s.nome);
+  const m = mdcMap.get(norm(nomeExato)) || mdcMap.get(norm(s.nome));
   let situacao = 'SEM_CADASTRO';
   let situacaoLabel = '❌ Sem cadastro facial no MDC4';
   let situacaoBadge = 'badge-nao-encontrado';
@@ -84,9 +103,11 @@ const colaboradores = Object.values(sheets).map(s => {
     : (s.quadraLote || 'SEM LOTE');
 
   return {
-    id: s.id || ('colab_' + norm(s.nome).replace(/\s+/g, '_')),
-    nome: s.nome,
-    nomeNormalizado: norm(s.nome),
+    id: s.id || ('colab_' + norm(nomeExato).replace(/\s+/g, '_')),
+    nome: nomeExato,
+    nomeOriginal: s.nome,
+    temApelido: nomeExato !== s.nome,
+    nomeNormalizado: norm(nomeExato),
     profissao: s.profissao,
     aba: s.aba,
     quadraLote: s.quadraLote || 'SEM LOTE',
@@ -546,6 +567,31 @@ const htmlContent = `<!DOCTYPE html>
       color: #fff !important;
     }
 
+    .btn-copy-nome {
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid rgba(99, 102, 241, 0.45);
+      color: #c7d2fe;
+      padding: 4px 9px;
+      font-size: 11.5px;
+      border-radius: 5px;
+    }
+
+    .btn-copy-nome:hover {
+      background: #4f46e5;
+      border-color: #4f46e5;
+      color: #fff;
+    }
+
+    .colab-nome-click {
+      cursor: pointer;
+      transition: color 0.15s;
+    }
+
+    .colab-nome-click:hover {
+      color: #818cf8 !important;
+      text-decoration: underline;
+    }
+
     /* CHECKBOX STYLING */
     .custom-check {
       cursor: pointer;
@@ -765,19 +811,62 @@ const htmlContent = `<!DOCTYPE html>
     setTimeout(() => toast.classList.remove('show'), 2200);
   }
 
-  function copiarTexto(texto, btn, labelSucesso = 'Copiado!') {
-    navigator.clipboard.writeText(texto).then(() => {
-      showToast(\`Copiado: "\${texto}"\`);
-      if (btn) {
-        const original = btn.innerHTML;
-        btn.classList.add('copied');
-        btn.innerHTML = \`<i class="ph-bold ph-check"></i> \${labelSucesso}\`;
+  function copiarTexto(texto, el, labelSucesso = 'Copiado!') {
+    if (!texto) return;
+    // Garante que é ESTRITAMENTE apenas o nome exato (sem quebras de linha, sem tabs, sem espaços duplos nas pontas)
+    const textoLimpo = String(texto).replace(/[\\r\\n\\t]+/g, ' ').replace(/\\s+/g, ' ').trim();
+
+    function feedbackSucesso() {
+      showToast(\`Copiado: "\${textoLimpo}"\`);
+      if (el) {
+        const originalHtml = el.innerHTML;
+        el.classList.add('copied');
+        if (el.tagName === 'BUTTON') {
+          el.innerHTML = \`<i class="ph-bold ph-check"></i> \${labelSucesso}\`;
+        }
         setTimeout(() => {
-          btn.classList.remove('copied');
-          btn.innerHTML = original;
+          el.classList.remove('copied');
+          if (el.tagName === 'BUTTON') {
+            el.innerHTML = originalHtml;
+          }
         }, 1500);
       }
-    });
+    }
+
+    // 1. Tenta API moderna do navegador (HTTPS ou localhost)
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(textoLimpo)
+        .then(() => feedbackSucesso())
+        .catch(() => fallbackCopy(textoLimpo));
+    } else {
+      fallbackCopy(textoLimpo);
+    }
+
+    // 2. Fallback universal (funciona em HTTP via IP de rede 192.168.x.x e outros)
+    function fallbackCopy(str) {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = str;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        ta.style.top = '-9999px';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        ta.setSelectionRange(0, 99999);
+        const ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        if (ok) {
+          feedbackSucesso();
+        } else {
+          window.prompt('Copie o nome exato com Ctrl+C:', str);
+        }
+      } catch (err) {
+        window.prompt('Copie o nome exato com Ctrl+C:', str);
+      }
+    }
   }
 
   function filtrarPorProfissao(prof, btn) {
@@ -854,10 +943,11 @@ const htmlContent = `<!DOCTYPE html>
             </label>
           </td>
           <td>
-            <div style="display: flex; flex-direction: column; gap: 2px;">
-              <strong style="color: #fff; font-size: 13.5px;">\${c.nome}</strong>
-              <div style="display: flex; gap: 6px; align-items: center;">
-                <button class="btn-copy" onclick="copiarTexto('\${c.nome.replace(/'/g, "\\\\'")}', this, 'Nome Copiado!')" title="Copiar nome do colaborador">
+            <div style="display: flex; flex-direction: column; gap: 3px;">
+              <strong class="colab-nome-click" onclick="copiarTexto('\${c.nome.replace(/'/g, "\\\\'")}', this, 'Nome Copiado!')" title="Clique para copiar apenas o nome exato" style="color: #fff; font-size: 13.5px;">\${c.nome}</strong>
+              \${c.temApelido ? \`<span style="font-size: 11px; color: var(--text-dim);">(Planilha: \${c.nomeOriginal})</span>\` : ''}
+              <div style="display: flex; gap: 6px; align-items: center; margin-top: 2px;">
+                <button class="btn-copy btn-copy-nome" onclick="copiarTexto('\${c.nome.replace(/'/g, "\\\\'")}', this, 'Nome Copiado!')" title="Copiar apenas o nome exato">
                   <i class="ph-bold ph-copy"></i> Copiar Nome
                 </button>
               </div>
@@ -897,9 +987,7 @@ const htmlContent = `<!DOCTYPE html>
 
   function copiarListaFormatadaTexto() {
     const linhas = DADOS.map(c => \`\${c.nome} | \${c.profissao} | \${c.casasStr} | \${c.condomino}\`).join('\\n');
-    navigator.clipboard.writeText(linhas).then(() => {
-      showToast(\`Todos os \${DADOS.length} colaboradores copiados em texto!\`);
-    });
+    copiarTexto(linhas, null, 'Copiado!');
   }
 
   function exportarCSV() {
@@ -939,3 +1027,4 @@ const htmlContent = `<!DOCTYPE html>
 fs.writeFileSync(outFile, htmlContent, 'utf8');
 console.log('Arquivo gerado com sucesso em:', outFile);
 console.log('Tamanho:', htmlContent.length, 'bytes');
+
