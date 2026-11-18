@@ -539,6 +539,47 @@
           </div>
         </div>
 
+        <!-- CARD 4: FILTRO DE CATEGORIAS VISÍVEIS NO SISTEMA DA PORTARIA -->
+        <div class="config-card">
+          <div class="config-card-header">
+            <div class="config-icon-badge blue" style="background: #e0f2fe; color: #0284c7;">
+              <i class="ph-bold ph-funnel"></i>
+            </div>
+            <div>
+              <h3>Filtro de Categorias Visíveis na Portaria</h3>
+              <p>Escolha quais tipos de prestadores aparecem no Radar de Prazos, Calendário e Notificações (ex: ocultar Babás, Diaristas, etc.)</p>
+            </div>
+          </div>
+
+          <div class="config-card-body">
+            <p style="font-size: 13.5px; color: #475569; line-height: 1.5; margin-bottom: 14px;">
+              Marque apenas as categorias que a portaria deve monitorar diariamente. Categorias desmarcadas ficarão ocultas do radar de vencimentos e não gerarão alertas de WhatsApp.
+            </p>
+
+            <div style="display: flex; gap: 10px; margin-bottom: 14px;">
+              <button type="button" class="btn-secondary-action" style="padding: 6px 12px; font-size: 12px;" onclick="marcarTodasCategoriasFiltro(true)">
+                <i class="ph-bold ph-check-square"></i> Marcar Todas
+              </button>
+              <button type="button" class="btn-secondary-action" style="padding: 6px 12px; font-size: 12px;" onclick="marcarTodasCategoriasFiltro(false)">
+                <i class="ph-bold ph-square"></i> Desmarcar Todas
+              </button>
+            </div>
+
+            <div id="gridCategoriasFiltro" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; padding: 14px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 16px;">
+              <!-- Populado dinamicamente via JS -->
+            </div>
+
+            <div class="template-actions-row">
+              <button class="btn-primary-action" onclick="salvarFiltroCategoriasConfig()">
+                <i class="ph-bold ph-floppy-disk"></i> Salvar Preferências de Exibição
+              </button>
+              <span id="msgStatusFiltroCategorias" style="font-size: 13px; color: #10b981; font-weight: 600; display: none;">
+                <i class="ph-bold ph-check-circle"></i> Preferências salvas com sucesso!
+              </span>
+            </div>
+          </div>
+        </div>
+
       </div>
     </section>
 

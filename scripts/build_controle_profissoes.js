@@ -649,6 +649,9 @@ const htmlContent = `<!DOCTYPE html>
       </div>
     </div>
     <div class="header-actions">
+      <button class="btn-header" id="btnAtualizarAoVivo" onclick="carregarDadosTempoReal(true)" style="background: rgba(59, 130, 246, 0.2); border-color: rgba(59, 130, 246, 0.5); color: #93c5fd;">
+        <i class="ph-bold ph-arrows-clockwise" id="iconAtualizarAoVivo"></i> Atualizar Agora (Tempo Real)
+      </button>
       <button class="btn-header" onclick="copiarListaFormatadaTexto()">
         <i class="ph-bold ph-copy"></i> Copiar Tudo em Texto
       </button>
@@ -670,28 +673,28 @@ const htmlContent = `<!DOCTYPE html>
       <div class="kpi-icon kpi-blue"><i class="ph-bold ph-users"></i></div>
       <div class="kpi-data">
         <span>Total Colaboradores</span>
-        <strong>${totalGeral}</strong>
+        <strong id="kpiTotalGeral">${totalGeral}</strong>
       </div>
     </div>
     <div class="kpi-card">
       <div class="kpi-icon kpi-yellow"><i class="ph-bold ph-warning"></i></div>
       <div class="kpi-data">
         <span>No MDC como Prestador Genérico</span>
-        <strong>${totalPrecisaAjustar}</strong>
+        <strong id="kpiPrecisaAjustar">${totalPrecisaAjustar}</strong>
       </div>
     </div>
     <div class="kpi-card">
       <div class="kpi-icon kpi-red"><i class="ph-bold ph-user-minus"></i></div>
       <div class="kpi-data">
         <span>Sem Cadastro Facial no MDC</span>
-        <strong>${totalSemCadastro}</strong>
+        <strong id="kpiSemCadastro">${totalSemCadastro}</strong>
       </div>
     </div>
     <div class="kpi-card">
       <div class="kpi-icon kpi-green"><i class="ph-bold ph-check-circle"></i></div>
       <div class="kpi-data">
         <span>Classificação Compatível</span>
-        <strong>${totalCompativel}</strong>
+        <strong id="kpiCompativel">${totalCompativel}</strong>
       </div>
     </div>
   </div>
@@ -705,6 +708,9 @@ const htmlContent = `<!DOCTYPE html>
       <div class="progress-bar-fill" id="progressBarFill"></div>
     </div>
     <span class="progress-text" id="progressText">0 de ${totalGeral} ajustados (0%)</span>
+    <span id="badgeUltimaAtualizacao" style="margin-left: auto; font-size: 11.5px; color: #64748b;">
+      <i class="ph-bold ph-clock"></i> Atualizado ao vivo
+    </span>
   </div>
 
   <!-- FILTROS -->
@@ -765,9 +771,50 @@ const htmlContent = `<!DOCTYPE html>
 </div>
 
 <script>
-  const DADOS = ${JSON.stringify(colaboradores, null, 2)};
+  let DADOS = ${JSON.stringify(colaboradores, null, 2)};
   let profissaoAtiva = 'TODAS';
   const STORAGE_KEY = 'hamoa_profissoes_concluidas_v1';
+
+  async function carregarDadosTempoReal(forcar = false) {
+    const btn = document.getElementById('btnAtualizarAoVivo');
+    const icon = document.getElementById('iconAtualizarAoVivo');
+    const badgeTime = document.getElementById('badgeUltimaAtualizacao');
+
+    if (btn) btn.disabled = true;
+    if (icon) icon.classList.add('ph-spin');
+    if (forcar) showToast('🔄 Consultando dados em tempo real...');
+
+    try {
+      const res = await fetch('/api/controle-profissoes/live?forcar=' + (forcar ? 'true' : 'false'));
+      if (!res.ok) throw new Error('Falha na resposta da API');
+      const data = await res.json();
+
+      if (data && Array.isArray(data.colaboradores) && data.colaboradores.length > 0) {
+        DADOS = data.colaboradores;
+
+        // Atualiza KPIs
+        if (document.getElementById('kpiTotalGeral')) document.getElementById('kpiTotalGeral').textContent = data.totalGeral;
+        if (document.getElementById('kpiPrecisaAjustar')) document.getElementById('kpiPrecisaAjustar').textContent = data.totalPrecisaAjustar;
+        if (document.getElementById('kpiSemCadastro')) document.getElementById('kpiSemCadastro').textContent = data.totalSemCadastro;
+        if (document.getElementById('kpiCompativel')) document.getElementById('kpiCompativel').textContent = data.totalCompativel;
+
+        if (badgeTime) {
+          const hora = new Date().toLocaleTimeString('pt-BR');
+          badgeTime.innerHTML = '<i class="ph-bold ph-clock"></i> Atualizado às ' + hora + (data.emCache ? ' (cache)' : ' (ao vivo)');
+        }
+
+        atualizarProgresso();
+        renderTabela();
+        if (forcar) showToast('✅ Dados atualizados ao vivo! (' + data.totalGeral + ' colaboradores)');
+      }
+    } catch (err) {
+      console.warn('Modo offline / API indisponível, mantendo dados carregados:', err.message);
+      if (forcar) showToast('⚠️ Sem conexão direta com o servidor, usando dados em cache.');
+    } finally {
+      if (btn) btn.disabled = false;
+      if (icon) icon.classList.remove('ph-spin');
+    }
+  }
 
   function getConcluidos() {
     try {
@@ -1018,6 +1065,11 @@ const htmlContent = `<!DOCTYPE html>
   // Inicialização
   atualizarProgresso();
   renderTabela();
+
+  // Tenta carregar dados ao vivo se estiver servido por HTTP
+  if (window.location.protocol.startsWith('http')) {
+    carregarDadosTempoReal(false);
+  }
 </script>
 
 </body>

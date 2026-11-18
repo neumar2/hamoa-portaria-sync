@@ -239,9 +239,13 @@ class Database {
         backupPath: 'D:\\BKP-DIARIO',
         whatsappTemplate: '*vencimento.hamoa - Hamoa Resort Residencial*\n📍 *Unidade: {UNIDADE}*\nOlá, *{MORADOR}*!\n\nIdentificamos que o(s) seguinte(s) colaborador(es) vinculado(s) à sua residência possuem atualização de biometria facial pendente:\n\n{FUNCIONARIOS}\n👉 *Como renovar:* Para evitar bloqueios ou atrasos na portaria, solicitamos o envio de documento/foto atualizado respondendo a esta mensagem ou comparecendo à administração do Hamoa.\n\n_Administração & Portaria Hamoa_',
         ultimoBackup: 'MDC4web_05112026_200.bak',
-        ultimaSincronizacao: new Date().toISOString()
+        ultimaSincronizacao: new Date().toISOString(),
+        categoriasVisiveis: []
       };
       this.save();
+    }
+    if (!Array.isArray(this.data.settings.categoriasVisiveis)) {
+      this.data.settings.categoriasVisiveis = [];
     }
     return this.data.settings;
   }

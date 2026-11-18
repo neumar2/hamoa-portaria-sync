@@ -2043,6 +2043,7 @@ async function carregarConfiguracoes() {
       aoDigitarTemplateWhats();
     }
 
+    await carregarFiltroCategoriasConfig();
     await carregarStatusSincronizacao();
   } catch (err) {
     console.error('Erro ao carregar configurações:', err);
@@ -2219,4 +2220,79 @@ function aoDigitarTemplateWhats() {
 
   preview.textContent = texto;
 }
+
+// ==================== FILTRO DE CATEGORIAS VISÍVEIS (PORTARIA) ====================
+
+async function carregarFiltroCategoriasConfig() {
+  const container = document.getElementById('gridCategoriasFiltro');
+  if (!container) return;
+
+  try {
+    const [resCats, resSettings] = await Promise.all([
+      fetch('/api/categorias'),
+      fetch('/api/settings')
+    ]);
+    const categorias = await resCats.json();
+    const settings = await resSettings.json();
+    const visiveis = Array.isArray(settings.categoriasVisiveis) ? settings.categoriasVisiveis : [];
+
+    // Se a lista de visíveis estiver vazia, por padrão todas estão ativas
+    const todasAtivas = visiveis.length === 0;
+    const setVisiveis = new Set(visiveis.map(c => c.toLowerCase().trim()));
+
+    container.innerHTML = categorias.map((cat, idx) => {
+      const isChecked = todasAtivas || setVisiveis.has(cat.toLowerCase().trim());
+      const catId = `chk_cat_filtro_${idx}`;
+      return `
+        <label for="${catId}" style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 6px 10px; border-radius: 6px; background: #fff; border: 1px solid #cbd5e1; font-size: 13px; font-weight: 500; color: #1e293b;">
+          <input type="checkbox" id="${catId}" class="chk-cat-filtro" value="${cat}" ${isChecked ? 'checked' : ''} style="cursor: pointer; width: 16px; height: 16px; accent-color: #0284c7;">
+          <span>${cat}</span>
+        </label>
+      `;
+    }).join('');
+  } catch (err) {
+    console.error('Erro ao carregar categorias para filtro:', err);
+    container.innerHTML = '<span style="color: #ef4444; font-size: 13px;">Erro ao carregar lista de categorias.</span>';
+  }
+}
+
+function marcarTodasCategoriasFiltro(marcar = true) {
+  document.querySelectorAll('.chk-cat-filtro').forEach(chk => {
+    chk.checked = marcar;
+  });
+}
+
+async function salvarFiltroCategoriasConfig() {
+  const chks = document.querySelectorAll('.chk-cat-filtro:checked');
+  const selecionadas = Array.from(chks).map(chk => chk.value.trim());
+
+  const msgStatus = document.getElementById('msgStatusFiltroCategorias');
+
+  try {
+    const res = await fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        categoriasVisiveis: selecionadas
+      })
+    });
+    const updated = await res.json();
+    appSettings = updated;
+
+    if (msgStatus) {
+      msgStatus.style.display = 'inline-flex';
+      setTimeout(() => { msgStatus.style.display = 'none'; }, 3000);
+    }
+    showToast(`✅ Filtro salvo! (${selecionadas.length} categorias visíveis na portaria)`);
+
+    // Recarrega dados e telas para aplicar o filtro imediatamente
+    await carregarDadosIniciais();
+    renderizarGradeCalendario();
+    if (dataSelecionadaStr) renderizarAgendaDoDia(dataSelecionadaStr);
+    if (modoAtual === 'radar') renderizarListaDinamicaRadar();
+  } catch (err) {
+    showToast(`❌ Erro ao salvar filtro de categorias: ${err.message}`);
+  }
+}
+
 

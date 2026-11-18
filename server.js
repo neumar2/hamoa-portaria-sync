@@ -5,6 +5,7 @@ const config = require('./config');
 const db = require('./database/db');
 const { classificarVencimento, gerarAlertasConsolidados } = require('./services/notificationService');
 const mdcSyncService = require('./services/mdcSyncService');
+const { getControleProfissoesData } = require('./services/controleProfissoesService');
 
 const app = express();
 const PORT = config.PORT;
@@ -20,10 +21,25 @@ function getTodayRef() {
   return d;
 }
 
+// Filtro auxiliar de categorias ativas/visíveis
+function filtrarPorCategoriasAtivas(prestadores) {
+  const settings = db.getSettings();
+  const visiveis = settings.categoriasVisiveis;
+  if (!Array.isArray(visiveis) || visiveis.length === 0) {
+    return prestadores; // Todas ativas por padrão
+  }
+  const setVisiveis = new Set(visiveis.map(c => c.toLowerCase().trim()));
+  return prestadores.filter(p => {
+    const cat = (p.categoria || '').toLowerCase().trim();
+    return setVisiveis.has(cat);
+  });
+}
+
 // ==================== ENDPOINTS DE ESTATÍSTICAS ====================
 
 app.get('/api/stats', (req, res) => {
-  const prestadores = db.getPrestadores();
+  const todosPrestadores = db.getPrestadores();
+  const prestadores = filtrarPorCategoriasAtivas(todosPrestadores);
   const unidades = db.getUnidades();
   const refDate = getTodayRef();
 
@@ -64,7 +80,8 @@ app.get('/api/stats', (req, res) => {
 // ==================== RADAR DE ALERTAS POR QUADRA/LOTE ====================
 
 app.get('/api/alertas', (req, res) => {
-  const prestadores = db.getPrestadores();
+  const todosPrestadores = db.getPrestadores();
+  const prestadores = filtrarPorCategoriasAtivas(todosPrestadores);
   const unidades = db.getUnidades();
   const refDate = getTodayRef();
   const { filtro, busca } = req.query;
@@ -368,7 +385,8 @@ app.get('/api/prestadores', (req, res) => {
 // Endpoint exclusivo de mapa do calendário (agrupado por data DD/MM/AAAA)
 app.get('/api/calendario', (req, res) => {
   const refDate = getTodayRef();
-  const prestadores = db.getPrestadores();
+  const todosPrestadores = db.getPrestadores();
+  const prestadores = filtrarPorCategoriasAtivas(todosPrestadores);
   const mapa = {};
   prestadores.forEach(p => {
     if (p.vencimentoFacial && p.vencimentoFacial.includes('/')) {
@@ -530,11 +548,15 @@ app.get('/api/settings', (req, res) => {
 });
 
 app.post('/api/settings', (req, res) => {
-  const { backupPath, whatsappTemplate } = req.body;
-  const updated = db.saveSettings({
+  const { backupPath, whatsappTemplate, categoriasVisiveis } = req.body;
+  const updatePayload = {
     backupPath: backupPath ? backupPath.trim() : 'D:\\BKP-DIARIO',
     whatsappTemplate: whatsappTemplate || ''
-  });
+  };
+  if (Array.isArray(categoriasVisiveis)) {
+    updatePayload.categoriasVisiveis = categoriasVisiveis;
+  }
+  const updated = db.saveSettings(updatePayload);
   res.json(updated);
 });
 
@@ -681,6 +703,18 @@ app.get('/api/sync/sheets/status', async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// Endpoint Dinâmico em Tempo Real para o Painel de Controle de Profissões
+app.get('/api/controle-profissoes/live', async (req, res) => {
+  try {
+    const forcar = req.query.forcar === 'true' || req.query.forcar === '1';
+    const data = await getControleProfissoesData(forcar);
+    res.json(data);
+  } catch (err) {
+    console.error('[API] Erro ao carregar controle de profissões:', err);
+    res.status(500).json({ sucesso: false, error: err.message });
   }
 });
 
