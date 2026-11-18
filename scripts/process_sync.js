@@ -421,7 +421,7 @@ async function executarSincronizacao(opcoes = {}) {
                                  existing.observacoes : (sheetMatch ? sheetMatch.observacoes : '');
 
     let unidadesAtendidas = [];
-    if (isManual && existing && Array.isArray(existing.unidadesAtendidas)) {
+    if (isEditadoManualmente && existing && Array.isArray(existing.unidadesAtendidas)) {
       unidadesAtendidas = existing.unidadesAtendidas;
     } else if (sheetMatch && Array.isArray(sheetMatch.unidadesAtendidas) && sheetMatch.unidadesAtendidas.length > 0) {
       unidadesAtendidas = [...sheetMatch.unidadesAtendidas];
